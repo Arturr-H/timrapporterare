@@ -137,6 +137,13 @@ const TimeReportApp = () => {
                 [pr.number]: response.data
             }));
 
+            const commitShas = response.data.commits.map((commit: any) => commit.sha);
+            setSelectedCommits(prev => {
+                const newSelected = new Set(prev);
+                commitShas.forEach((sha: string) => newSelected.add(sha));
+                return Array.from(newSelected);
+            });
+
         } catch (err) {
             console.error("Error fetching commits:", err);
         } finally {
