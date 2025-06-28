@@ -1,0 +1,21 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8085:8085"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8086
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./backend:/app
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
