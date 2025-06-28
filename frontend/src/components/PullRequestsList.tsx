@@ -1,20 +1,20 @@
 import React from "react";
 import { GitBranch, ExternalLink, Copy, Loader2, ChevronDown, ChevronUp, Check } from "lucide-react";
-import { PullRequest } from "../Types";
-import { DropArea } from "./DragAndDrop";
+import { AsanaTask, PullRequest } from "../Types";
+import { DropArea, DropAreaItemsTeaser } from "./DragAndDrop";
 
 interface PullRequestsListProps {
     loading: boolean;
     pullRequests: PullRequest[];
     selectedPRs: Set<number>;
-    assignedTasks: { [key: number]: string[]; }
+    assignedTasks: { [key: number]: AsanaTask[]; }
     loadingCommits: Record<number, boolean>;
     showAllPRs: boolean;
     allPRsCount: number;
     onPRSelect: (pr: PullRequest) => void;
     onToggleShowAll: () => void;
     onCopyLink: (url: string) => void;
-    setAssignedTasks?: (tasks: { [key: number]: string[]; }) => void;
+    setAssignedTasks?: (tasks: { [key: number]: AsanaTask[]; }) => void;
     removeAssignedTask?: (prNumber: number, taskId: string) => void;
 }
 
@@ -52,71 +52,78 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                     <div className="relative">
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-2 pb-4">
                             {pullRequests.map(pr => (
-                                <div
-                                    key={pr.id}
-                                    className={`p-4 rounded-lg border transition-all cursor-pointer ${selectedPRs.has(pr.id)
+                                <DropArea
+                                    isActive={selectedPRs.has(pr.id)}
+                                    items={assignedTasks[pr.number] || []}
+                                    onChange={(tasks) => {
+                                        if (setAssignedTasks) {
+                                            setAssignedTasks({
+                                                ...assignedTasks,
+                                                [pr.number]: tasks,
+                                            });
+                                        }
+                                    }}
+                                >
+                                    <div
+                                        key={pr.id}
+                                        className={`p-4 rounded-lg border transition-all cursor-pointer ${selectedPRs.has(pr.id)
                                             ? "bg-brand-950/30 border-brand-800"
                                             : "bg-zinc-800/50 border-zinc-800 hover:bg-zinc-800"
                                         }`}
-                                    onClick={() => onPRSelect(pr)}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${selectedPRs.has(pr.id)
-                                                ? "bg-brand-600 border-brand-600"
-                                                : "border-zinc-600"
-                                            }`}>
-                                            {selectedPRs.has(pr.id) && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-baseline gap-2 mb-1">
-                                                <span className="text-sm text-zinc-500">#{pr.number}</span>
-                                                <h4 className="font-medium text-gray-200">{pr.title}</h4>
-                                                {loadingCommits[pr.number] && (
-                                                    <Loader2 className="w-3 h-3 animate-spin text-brand-500" />
-                                                )}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div
+                                                onClick={() => onPRSelect(pr)}
+                                                className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${selectedPRs.has(pr.id)
+                                                    ? "bg-brand-600 border-brand-600"
+                                                    : "border-zinc-600"
+                                                }`}>
+                                                {selectedPRs.has(pr.id) && <Check className="w-3 h-3 text-white" />}
                                             </div>
-                                            <div className="text-sm text-zinc-500">
-                                                av {pr.user.login} • {new Date(pr.created_at).toLocaleDateString("sv-SE")}
+                                            <div className="flex-1">
+                                                <div className="flex items-baseline gap-2 mb-1">
+                                                    <span className="text-sm text-zinc-500">#{pr.number}</span>
+                                                    <h4 className="font-medium text-gray-200">{pr.title}</h4>
+                                                    {loadingCommits[pr.number] && (
+                                                        <Loader2 className="w-3 h-3 animate-spin text-brand-500" />
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-zinc-500">
+                                                    av {pr.user.login} • {new Date(pr.created_at).toLocaleDateString("sv-SE")}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <DropArea
-                                            height="100%"
-                                            items={assignedTasks[pr.number] || []}
-                                            onChange={(tasks) => {
-                                                if (setAssignedTasks) {
-                                                    setAssignedTasks({
-                                                        ...assignedTasks,
-                                                        [pr.number]: tasks,
-                                                    });
-                                                }
-                                            }}
-                                        />
+                                            <div className="flex items-center gap-1">
+                                                <DropAreaItemsTeaser items={assignedTasks[pr.number] || []} removeItem={(asanatask) => {
+                                                    if (removeAssignedTask) {
+                                                        removeAssignedTask(pr.number, asanatask.gid);
+                                                    }
+                                                }} />
 
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    window.open(pr.html_url, "_blank");
-                                                }}
-                                                className="p-1.5 hover:bg-zinc-700 rounded transition-colors"
-                                                title="Öppna PR"
-                                            >
-                                                <ExternalLink className="w-4 h-4 text-zinc-400" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onCopyLink(pr.html_url);
-                                                }}
-                                                className="p-1.5 hover:bg-zinc-700 rounded transition-colors"
-                                                title="Kopiera länk"
-                                            >
-                                                <Copy className="w-4 h-4 text-zinc-400" />
-                                            </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        window.open(pr.html_url, "_blank");
+                                                    }}
+                                                    className="p-1.5 hover:bg-zinc-700 rounded transition-colors ml-2"
+                                                    title="Öppna PR"
+                                                >
+                                                    <ExternalLink className="w-4 h-4 text-zinc-400" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onCopyLink(pr.html_url);
+                                                    }}
+                                                    className="p-1.5 hover:bg-zinc-700 rounded transition-colors"
+                                                    title="Kopiera länk"
+                                                >
+                                                    <Copy className="w-4 h-4 text-zinc-400" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </DropArea>
                             ))}
                         </div>
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-zinc-900 to-transparent"></div>

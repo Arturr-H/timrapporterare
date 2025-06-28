@@ -10,7 +10,7 @@ import RepositorySelector from "./components/RepositorySelector";
 import PRCommitsView from "./components/PRCommitsView";
 import PullRequestsList from "./components/PullRequestsList";
 import TimeReportNotes from "./components/RichTextEditor";
-import { DragAndDroppableItem, DropArea } from "./components/DragAndDrop";
+import { DragAndDroppableItem, DropArea, useContextMenu } from "./components/DragAndDrop";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8086";
 
@@ -37,7 +37,7 @@ const TimeReportApp = () => {
     const [selectedCommits, setSelectedCommits] = useState<string[]>([]);
 
     // Each PR can have multiple assigned tasks from asana
-    const [assignedTasks, setAssignedTasks] = useState<{ [key: number]: string[] }>({});
+    const [assignedTasks, setAssignedTasks] = useState<{ [key: number]: (AsanaTask)[] }>({});
 
     const currentDate = new Date().toLocaleDateString("sv-SE", {
         weekday: "long",
@@ -176,6 +176,13 @@ const TimeReportApp = () => {
             for (const commit of prCommits[pr.number]?.commits || []) {
                 setSelectedCommits(prev => prev.filter(sha => sha !== commit.sha));
             }
+
+            // Remove assigned tasks for this PR
+            setAssignedTasks(prev => {
+                const updated = { ...prev };
+                delete updated[pr.number];
+                return updated;
+            });
         } else {
             newSelected.add(pr.id);
             setSelectedPRs(newSelected);
@@ -259,11 +266,15 @@ const TimeReportApp = () => {
                 pullRequests.find(pr => pr.id === id)?.number
             ).filter(Boolean);
 
-            // Skapa en map av PR data
+            // Skapa en map av PR data med Asana tasks
             const prDataMap: Record<number, any> = {};
-            selectedPRNumbers.forEach(prNumber => {
+            selectedPRNumbers.forEach((prNumber: number | undefined) => {
                 if (prNumber && prCommits[prNumber]) {
-                    prDataMap[prNumber] = prCommits[prNumber];
+                    prDataMap[prNumber] = {
+                        ...prCommits[prNumber],
+                        // Lägg till Asana tasks för denna PR
+                        asana_tasks: assignedTasks[prNumber] || []
+                    };
                 }
             });
 
@@ -275,7 +286,11 @@ const TimeReportApp = () => {
 
             console.log('Genererar timrapport med:', {
                 commits: selectedCommits,
-                prs: Object.keys(prDataMap)
+                prs: Object.keys(prDataMap),
+                tasks: Object.entries(prDataMap).reduce((acc: Record<string, number>, [pr, data]) => {
+                    acc[pr] = data.asana_tasks.length;
+                    return acc;
+                }, {})
             });
 
             // Anropa backend
@@ -298,15 +313,15 @@ const TimeReportApp = () => {
             console.log(response.data.report);
             console.log('===============================');
 
-            // Du kan också returnera rapporten för vidare användning
             return response.data.report;
+
         } catch (error: any) {
             console.error('Fel vid generering av timrapport:', error);
             if (error.response) {
                 console.error('Backend svar:', error.response.data);
             }
 
-            return "Åh nej! Något gick snett.";
+            return "Något gick snett"
         }
     }
 
@@ -330,118 +345,124 @@ const TimeReportApp = () => {
     const currentCommitData = prCommits[currentPRNumber];
 
     const displayedPRs = showAllPRs ? pullRequests : pullRequests.slice(0, 8);
+    const { ContextMenuPortal } = useContextMenu();
 
     return (
-        <div className="h-screen bg-black text-gray-100 flex overflow-hidden">
-            <AsanaSidebar
-                loadingAsana={loadingAsana}
-                asanaTasks={asanaTasks}
-                copyToClipboard={copyToClipboard}
-            />
+        <>
+            <ContextMenuPortal />
+            <div className="h-screen bg-black text-gray-100 flex overflow-hidden">
 
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-                <TokenModal
-                    isOpen={tokenModalOpen}
-                    githubToken={githubToken}
-                    asanaToken={asanaToken}
-                    onGithubTokenChange={setGithubToken}
-                    onAsanaTokenChange={setAsanaToken}
-                    onSave={saveTokens}
-                    onClose={() => setTokenModalOpen(false)}
+                <AsanaSidebar
+                    loadingAsana={loadingAsana}
+                    asanaTasks={asanaTasks}
+                    copyToClipboard={copyToClipboard}
                 />
 
-                <AddRepoModal
-                    isOpen={addRepoModalOpen}
-                    repoUrl={repoUrl}
-                    onRepoUrlChange={setRepoUrl}
-                    onAdd={addRepo}
-                    onClose={() => {
-                        setAddRepoModalOpen(false);
-                        setRepoUrl("");
-                    }}
-                />
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                    <TokenModal
+                        isOpen={tokenModalOpen}
+                        githubToken={githubToken}
+                        asanaToken={asanaToken}
+                        onGithubTokenChange={setGithubToken}
+                        onAsanaTokenChange={setAsanaToken}
+                        onSave={saveTokens}
+                        onClose={() => setTokenModalOpen(false)}
+                    />
 
-                <div className="flex-1 overflow-y-auto px-8 py-8">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="text-center mb-12">
-                            <div className="inline-flex items-center gap-3 mb-4 bg-zinc-900 px-6 py-3 rounded-full border border-zinc-800">
-                                <Calendar className="w-5 h-5 text-brand-500" />
-                                <h1 className="text-xl">{currentDate}</h1>
+                    <AddRepoModal
+                        isOpen={addRepoModalOpen}
+                        repoUrl={repoUrl}
+                        onRepoUrlChange={setRepoUrl}
+                        onAdd={addRepo}
+                        onClose={() => {
+                            setAddRepoModalOpen(false);
+                            setRepoUrl("");
+                        }}
+                    />
+
+                    <div className="flex-1 overflow-y-auto px-8 py-8">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="mb-12 flex items-center justify-between">
+                                <h2 className="text-4xl font-bold text-white">
+                                    Timrapport{selectedRepo ? ":" : ""} <span className="text-brand-400">{selectedRepo}</span>
+                                </h2>
+
+                                <div className="inline-flex items-center gap-3">
+                                    <Calendar className="w-5 h-5 text-brand-500" />
+                                    <h1 className="text-xl">{currentDate}</h1>
+                                </div>
                             </div>
-                            <h2 className="text-4xl font-bold text-white">
-                                Timrapport{selectedRepo ? ":" : ""} <span className="text-brand-400">{selectedRepo}</span>
-                            </h2>
-                        </div>
 
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-950 border border-red-900 rounded-lg flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-red-400" />
-                                <p className="text-red-400">{error}</p>
-                            </div>
-                        )}
-
-                        <RepositorySelector
-                            selectedRepo={selectedRepo}
-                            repos={sortedRepos}
-                            favorites={favorites}
-                            onSelectRepo={setSelectedRepo}
-                            onToggleFavorite={toggleFavorite}
-                            onRemoveRepo={removeRepo}
-                            onAddRepo={() => setAddRepoModalOpen(true)}
-                            onOpenTokenModal={() => setTokenModalOpen(true)}
-                        />
-
-                        {selectedRepo && (
-                            <PullRequestsList
-                                loading={loading}
-                                pullRequests={displayedPRs}
-                                selectedPRs={selectedPRs}
-                                loadingCommits={loadingCommits}
-                                showAllPRs={showAllPRs}
-                                assignedTasks={assignedTasks}
-                                allPRsCount={pullRequests.length}
-                                onPRSelect={handlePRSelection}
-                                onToggleShowAll={() => setShowAllPRs(!showAllPRs)}
-                                onCopyLink={(url: any) => copyToClipboard(url)}
-                                setAssignedTasks={setAssignedTasks}
-                                removeAssignedTask={(prNumber: number, taskId: string) => {
-                                    setAssignedTasks(prev => {
-                                        const updated = { ...prev };
-                                        updated[prNumber] = updated[prNumber].filter(task => task !== taskId);
-                                        return updated;
-                                    });
-                                }}
-                            />
-                        )}
-
-                        {selectedPRNumbers.length > 0 && currentCommitData && (
-                            <PRCommitsView
-                                currentPRIndex={currentPRIndex}
-                                selectedPRNumbers={selectedPRNumbers}
-                                currentCommitData={currentCommitData}
-                                onPrev={() => setCurrentPRIndex(Math.max(0, currentPRIndex - 1))}
-                                onNext={() => setCurrentPRIndex(Math.min(selectedPRNumbers.length - 1, currentPRIndex + 1))}
-                                onCopyLink={() => copyToClipboard(currentCommitData.pull_url)}
-                                selectedCommits={selectedCommits}
-                                onCommitSelectionChange={handleCommitSelectionChange}
-                            />
-                        )}
-
-                        {((currentCommitData && currentCommitData.commits.length > 0)
-                            || (localStorage.getItem("timeReportNotes") !== undefined && localStorage.getItem("timeReportNotes") !== "")) && (
-                                <>
-                                    {/* Existing PR list */}
-                                    <div className="mt-8">
-                                        <TimeReportNotes
-                                            generateSuggestion={handleGenerateSuggestion}
-                                        />
-                                    </div>
-                                </>
+                            {error && (
+                                <div className="mb-6 p-4 bg-red-950 border border-red-900 rounded-lg flex items-center gap-2">
+                                    <AlertCircle className="w-5 h-5 text-red-400" />
+                                    <p className="text-red-400">{error}</p>
+                                </div>
                             )}
+
+                            <RepositorySelector
+                                selectedRepo={selectedRepo}
+                                repos={sortedRepos}
+                                favorites={favorites}
+                                onSelectRepo={setSelectedRepo}
+                                onToggleFavorite={toggleFavorite}
+                                onRemoveRepo={removeRepo}
+                                onAddRepo={() => setAddRepoModalOpen(true)}
+                                onOpenTokenModal={() => setTokenModalOpen(true)}
+                            />
+
+                            {selectedRepo && (
+                                <PullRequestsList
+                                    loading={loading}
+                                    pullRequests={displayedPRs}
+                                    selectedPRs={selectedPRs}
+                                    loadingCommits={loadingCommits}
+                                    showAllPRs={showAllPRs}
+                                    assignedTasks={assignedTasks}
+                                    allPRsCount={pullRequests.length}
+                                    onPRSelect={handlePRSelection}
+                                    onToggleShowAll={() => setShowAllPRs(!showAllPRs)}
+                                    onCopyLink={(url: any) => copyToClipboard(url)}
+                                    setAssignedTasks={setAssignedTasks}
+                                    removeAssignedTask={(prNumber: number, taskId: string) => {
+                                        setAssignedTasks(prev => {
+                                            const updated = { ...prev };
+                                            updated[prNumber] = updated[prNumber].filter(task => task.gid !== taskId);
+                                            return updated;
+                                        });
+                                    }}
+                                />
+                            )}
+
+                            {selectedPRNumbers.length > 0 && currentCommitData && (
+                                <PRCommitsView
+                                    currentPRIndex={currentPRIndex}
+                                    selectedPRNumbers={selectedPRNumbers}
+                                    currentCommitData={currentCommitData}
+                                    onPrev={() => setCurrentPRIndex(Math.max(0, currentPRIndex - 1))}
+                                    onNext={() => setCurrentPRIndex(Math.min(selectedPRNumbers.length - 1, currentPRIndex + 1))}
+                                    onCopyLink={() => copyToClipboard(currentCommitData.pull_url)}
+                                    selectedCommits={selectedCommits}
+                                    onCommitSelectionChange={handleCommitSelectionChange}
+                                />
+                            )}
+
+                            {((currentCommitData && currentCommitData.commits.length > 0)
+                                || (localStorage.getItem("timeReportNotes") !== undefined && localStorage.getItem("timeReportNotes") !== "")) && (
+                                    <>
+                                        {/* Existing PR list */}
+                                        <div className="mt-8">
+                                            <TimeReportNotes
+                                                generateSuggestion={handleGenerateSuggestion}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

@@ -27,44 +27,7 @@ const SimpleTextEditor = ({ value = "", onChange, placeholder = "Skriv här..." 
     const handleInput = () => {
         const editor = editorRef.current;
         if (!editor) return;
-
-        const selection = window.getSelection();
-        const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-
-        let cursorOffset = 0;
-
-        if (range) {
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(editor);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            cursorOffset = stripHtmlTags(preCaretRange.toString()).length;
-        }
-
         const plainText = stripHtmlTags(editor.innerHTML);
-        const formattedText = formatTextWithLinks(plainText);
-        editor.innerHTML = formattedText || "<br>";
-
-        if (range) {
-            const textNodes = [];
-            const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
-            let node;
-            while (node = walker.nextNode()) textNodes.push(node);
-
-            let charCount = 0;
-            for (const textNode of textNodes) {
-                const nodeLength = textNode.textContent?.length;
-                if (nodeLength && charCount + nodeLength >= cursorOffset) {
-                    const newRange = document.createRange();
-                    newRange.setStart(textNode, Math.min(cursorOffset - charCount, nodeLength));
-                    newRange.collapse(true);
-                    selection?.removeAllRanges();
-                    selection?.addRange(newRange);
-                    break;
-                }
-                charCount += nodeLength || 0;
-            }
-        }
-
         setContent(plainText);
         if (onChange) onChange(plainText);
     };

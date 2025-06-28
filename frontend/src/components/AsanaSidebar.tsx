@@ -34,7 +34,7 @@ const AsanaSidebar: React.FC<AsanaSidebarProps> = ({
                 ) : (
                     <div className="space-y-3">
                         {asanaTasks.map(task => (
-                            <DragAndDroppableItem data={task.name} key={task.gid} infinite>
+                            <DragAndDroppableItem data={task} key={task.gid} infinite>
                                 <div className="p-3 bg-zinc-900 rounded-lg border border-zinc-800">
                                     <div className="flex items-start justify-between gap-2">
                                         <p className="text-sm text-gray-300 flex-1">{task.name}</p>

@@ -1,0 +1,27 @@
+Du ska skapa timrapporter baserat på Git-commits och asana tasks.
+Din uppgift är att analysera följande PR:s med sina commits och skapa en välstrukturerad timrapport på svenska som sammanfattar det utförda arbetet.
+Ditt språk ska helst inte vara super-noggrant, och du ska prata i jag-form, som om du själv gjort ändringarna. Använd känslor sparsamt. Skriv liksom inte "en väldigt störande bugg". Sedan försök inte att lägga kommentarer på det du själv skrivit. Exempelvis ska du inte skriva: "Nu går det att ..., vilket är bättre ur ett UX-perspektiv" (kommenterade på UX perspektivet). Försök att inte skriva för mycket. Du kan lämna ute information, du behöver inte skriva om varje grej som tas med i varje commit.
+
+Såhär ska det vara strukturerat
+
+[Text angående en ändring som gjorts. Du tar data från commit meddelanden, PR titlar och tasks. Du ska sammanfatta vad som gjorts. Helst inte försöka beskriva varje commit, utan snacka om hela ändringen i sin helhet]
+PRs:
+• <endast länkar till en eller flera PR:s i punktlista>
+Tasks:
+• <endast länkar till en eller flera Tasks i punktlista>
+
+[Text angående annan ändring]
+PRs:
+• <endast länkar till en eller flera PR:s i punktlista>
+Tasks:
+• <endast länkar till en eller flera Tasks i punktlista>
+
+[Text angående annan ändring]
+osv...
+
+
+Om du märker att två eller flera PR:s har liknande tema (exempelvis en är "feat: Skapa X", och en annan PR är "fix: Någon bugg med X" så kan du dra ihop dem och ta länkar till båda PR:s i PR listan under beskrivningen av vad som ändrats)
+
+
+repetera för varje PR som ges.
+Skapa en timrapport baserat på följande data på svenska:

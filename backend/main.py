@@ -336,30 +336,78 @@ async def get_asana_tasks(asana_token: Optional[str] = Header(None)):
         
         return tasks_response.json()
 
+from typing import Dict, List, Optional
+
+class AsanaTaskData(BaseModel):
+    gid: str
+    name: str
+    due_on: Optional[str] = None
+    permalink_url: str
+
+class PRData(BaseModel):
+    pull_title: str
+    pull_url: str
+    repo_name: str
+    commit_count: int
+    commits: List[Dict]
+    asana_tasks: List[AsanaTaskData] = []  # Ny field för Asana tasks
+
 class TimeReportRequest(BaseModel):
     commits: List[str]  # Lista med commit hashes
-    pr_data: Dict[str, Dict]  # PR nummer -> PR data med commits
+    pr_data: Dict[str, PRData]  # PR nummer -> PR data med commits och tasks
 
 @app.post("/api/generate-time-report")
 async def generate_time_report(request: TimeReportRequest):
-    """Generera timrapport med AI baserat på valda commits"""
+    """Generera timrapport med AI baserat på valda commits och Asana tasks"""
     try:
+        # Validera att vi har data
+        if not request.commits:
+            raise HTTPException(status_code=400, detail="Inga commits valda")
+        
+        if not request.pr_data:
+            raise HTTPException(status_code=400, detail="Ingen PR data tillgänglig")
+        
         # Skapa sammanställning
-        report_text = create_commit_summary(request.commits, request.pr_data)
+        pr_data_dict = {k: v.dict() for k, v in request.pr_data.items()}
+        report_text = create_commit_summary(request.commits, pr_data_dict)
         
+        # Logga för debugging
+        print(f"Genererar rapport för {len(request.commits)} commits från {len(request.pr_data)} PRs")
+        full_prompt = f"{AI_PROMPT}\n\n{report_text}"
+        print(f"Full prompt:\n{full_prompt}\n")
         # Anropa ChatGPT
-        # ai_response = await call_chatgpt(report_text)
+        try:
+            ai_response = await call_chatgpt(report_text)
         
-        return {
-            "success": True,
-            "report": report_text,
-            "original_summary": report_text  # För debugging
-        }
+            return {
+                "success": True,
+                "report": ai_response,
+                "original_summary": report_text,  # För debugging
+                "stats": {
+                    "total_commits": len(request.commits),
+                    "total_prs": len(request.pr_data),
+                    "total_tasks": sum(len(pr.asana_tasks) for pr in request.pr_data.values())
+                }
+            }
+        except Exception as e:
+            return {
+                "success": True,
+                "report": report_text,
+                "original_summary": report_text,  # För debugging
+                "stats": {
+                    "total_commits": len(request.commits),
+                    "total_prs": len(request.pr_data),
+                    "total_tasks": sum(len(pr.asana_tasks) for pr in request.pr_data.values())
+                }
+            }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in generate_time_report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internt fel: {str(e)}")
 
 def create_commit_summary(selected_commits: List[str], pr_data: Dict) -> str:
-    """Skapa textsammanställning av valda commits grupperade per PR"""
+    """Skapa textsammanställning av valda commits grupperade per PR med Asana tasks"""
     summary_parts = []
     
     # Gruppera commits per PR
@@ -368,25 +416,36 @@ def create_commit_summary(selected_commits: List[str], pr_data: Dict) -> str:
         
         # Hitta alla commits som är valda för denna PR
         for commit in pr_info.get("commits", []):
-            if commit["sha"] in selected_commits or commit["sha"][:7] in selected_commits:
+            # Hantera både full SHA och kort SHA
+            commit_sha = commit.get("sha", "")
+            if commit_sha in selected_commits or commit_sha[:7] in selected_commits:
                 pr_commits.append(commit)
         
         if pr_commits:
-            summary_parts.append(f"PULL REQUEST: {pr_info['pull_title']}")
+            # PR rubrik
+            summary_parts.append(f"PULL REQUEST: {pr_info.get('pull_title', 'Untitled PR')} ({pr_info.get('pull_url', '')})")
+            
+            # Lägg till Asana tasks om de finns
+            asana_tasks = pr_info.get("asana_tasks", [])
+            for task in asana_tasks:
+                task_name = task.get("name", "Untitled task")
+                task_url = task.get("permalink_url", "")
+                summary_parts.append(f'* Resolves task "{task_name}" ({task_url})')
+            
+            # Lägg till commits
             for commit in pr_commits:
                 # Ta första raden av commit message
-                message = commit["message"].split('\n')[0]
-                summary_parts.append(f"* Commit {commit['sha'][:7]}: {message}")
-            summary_parts.append("")  # Tom rad mellan PRs
+                message = commit.get("message", "No message").split('\n')[0]
+                # sha = commit.get("sha", "")[:7]
+                summary_parts.append(f"* Commit: {message}")
+            
+            summary_parts.append("\n\n")  # Tom rad mellan PRs
     
-    return "\n\n".join(summary_parts)
+    return "\n".join(summary_parts)
 
 async def call_chatgpt(report_text: str) -> str:
     """Anropa ChatGPT med rapport och prompt"""
     try:
-        # Kombinera prompt med rapport
-        full_prompt = f"{AI_PROMPT}\n\n{report_text}"
-        
         # Anropa OpenAI API (asynkront)
         response = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",  # eller "gpt-4" om du har tillgång
