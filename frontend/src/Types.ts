@@ -12,9 +12,21 @@ export interface PullRequest {
     title: string;
     user: {
         login: string;
+        avatar_url: string;
+        html_url: string;
     };
     html_url: string;
     created_at: string;
+    merged_at?: string;
+    closed_at?: string;
+
+    // "state" can be "open", "closed", or "merged" etc
+    state: string;
+    draft: boolean;
+    
+    auto_merge?: {
+        merge_method: string;
+    }
 }
 
 export interface Commit {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, GitCommit, GitCommitVertical } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Construction, Copy, ExternalLink, GitCommit, GitCommitVertical, Scroll } from "lucide-react";
 import { PRCommitsData } from "../Types";
 
 interface PRCommitsViewProps {
@@ -11,6 +11,7 @@ interface PRCommitsViewProps {
     onNext: () => void;
     onCopyLink: () => void;
     onCommitSelectionChange: (commitSha: string, isSelected: boolean) => void;
+    setSelectedCommits: (commits: string[]) => void;
 }
 
 const PRCommitsView: React.FC<PRCommitsViewProps> = ({
@@ -22,6 +23,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
     onNext,
     onCopyLink,
     onCommitSelectionChange,
+    setSelectedCommits,
 }) => {
     const handleCommitCheck = (commitSha: string, checked: boolean) => {
         onCommitSelectionChange(commitSha, checked);
@@ -47,7 +49,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
         <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex-1 flex items-center gap-2">
-                    <GitCommitVertical className="w-5 h-5 text-brand-500" />
+                    <Construction className="w-5 h-5 text-brand-500" />
                     <h3 className="text-lg font-medium mb-0">
                         Commits in #{currentCommitData.pull_url.split("/").pop()}
                     </h3>
@@ -75,7 +77,39 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                     </button>
                 </div>
 
-                <div className="flex-1 flex justify-end">
+                <div className="flex-1 flex justify-end gap-2">
+                    {/* Select / deselect all */}
+                    <div className="flex items-center">
+                        <button
+                            title="Markera / Avmarkera alla commits"
+                            className={`cursor-pointer w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${currentCommitData.commits.every(commit => selectedCommits.includes(commit.sha))
+                                ? "bg-brand-600 border-brand-600"
+                                : "border-zinc-600"
+                                }`}
+                            onClick={() => {
+                                let isSelected = currentCommitData.commits.every(commit => selectedCommits.includes(commit.sha));
+
+                                // Remove only commits for this PR
+                                if (isSelected) {
+                                    setSelectedCommits(selectedCommits.filter(sha => !currentCommitData.commits.some(commit => commit.sha === sha)));
+                                } else {
+                                    // Add all commits for this PR
+                                    const newSelectedCommits = currentCommitData.commits.map(commit => commit.sha);
+                                    let updatedSelectedCommits = [...selectedCommits];
+                                    newSelectedCommits.forEach(sha => {
+                                        if (!updatedSelectedCommits.includes(sha)) {
+                                            updatedSelectedCommits.push(sha);
+                                        }
+                                    });
+                                    setSelectedCommits(updatedSelectedCommits);
+                                }
+                            }}
+                            tabIndex={0}
+                        >
+                            {currentCommitData.commits.every(commit => selectedCommits.includes(commit.sha)) && <Check className="w-3 h-3 text-white" />}
+                        </button>
+                    </div>
+
                     <button
                         onClick={onCopyLink}
                         className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
@@ -93,22 +127,29 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                         const isSelected = selectedCommits.includes(commit.sha);
 
                         return (
-                            <div key={idx} className="p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors" onClick={() => handleCommitCheck(commit.sha, !isSelected)}>
+                            <div
+                                key={idx}
+                                className="p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors"
+                            >
                                 <div className="flex items-start gap-3">
                                     <div className="flex items-center pt-0.5">
-                                        <div
+                                        <button
                                             className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${isSelected
                                                 ? "bg-brand-600 border-brand-600"
                                                 : "border-zinc-600"
                                                 }`}
                                             onClick={() => handleCommitCheck(commit.sha, !isSelected)}
+                                            tabIndex={0}
                                             title={isSelected ? "Avmarkera commit" : "Markera commit"}
                                         >
                                             {isSelected && <Check className="w-3 h-3 text-white" />}
-                                        </div>
+                                        </button>
                                     </div>
                                     <div className="flex items-start justify-between gap-2 flex-1">
-                                        <div className="flex-1">
+                                        <div
+                                            className="flex-1 text-left"
+                                            onClick={() => handleCommitCheck(commit.sha, !isSelected)}
+                                        >
                                             <p className="text-sm text-gray-300">{commit.message}</p>
                                             <p className="text-xs text-zinc-500 mt-1">
                                                 {commit.sha.substring(0, 7)} • {commit.author} • {new Date(commit.date).toLocaleDateString("sv-SE")}
@@ -118,6 +159,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                                             onClick={() => window.open(commit.url, "_blank")}
                                             className="p-2 hover:bg-zinc-700 rounded transition-colors"
                                             title="Öppna commit"
+                                            tabIndex={-1} // Prevent focus
                                         >
                                             <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
                                         </button>

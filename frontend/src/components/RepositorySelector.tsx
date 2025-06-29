@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { GitBranch, Star, Plus, X, ChevronDown } from "lucide-react";
+import { GitBranch, Star, Plus, X, ChevronDown, Github } from "lucide-react";
 import { Repository } from "../Types";
+import { WordTag } from "./WordTag";
 
 interface RepositorySelectorProps {
     selectedRepo: string;
@@ -42,7 +43,7 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
                     className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-between hover:border-zinc-700 transition-colors"
                 >
                     <span className="flex items-center gap-2">
-                        <GitBranch className="w-4 h-4 text-zinc-500" />
+                        <Github className="w-4 h-4 text-zinc-500" />
                         {selectedRepo ? repos.find(r => r.full_name === selectedRepo)?.name : "Välj ett repository..."}
                     </span>
                     <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
@@ -66,14 +67,10 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
                                         <GitBranch className="w-4 h-4 text-zinc-500" />
                                         <span>{repo.name}</span>
                                         {repo.organization && (
-                                            <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
-                                                {repo.organization}
-                                            </span>
+                                            <WordTag word={repo.organization} className="bg-zinc-800 text-zinc-400" />
                                         )}
                                         {repo.private && (
-                                            <span className="text-xs bg-brand-900/30 text-brand-400 px-2 py-0.5 rounded">
-                                                Private
-                                            </span>
+                                            <WordTag word="Private" className="bg-brand-900/30 text-brand-400" />
                                         )}
                                     </button>
                                     <div className="flex items-center gap-1">

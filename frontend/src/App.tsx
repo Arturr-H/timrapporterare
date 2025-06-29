@@ -33,8 +33,8 @@ const TimeReportApp = () => {
     const [error, setError] = useState<string>("");
     const [asanaTasks, setAsanaTasks] = useState<AsanaTask[]>([]);
     const [loadingAsana, setLoadingAsana] = useState<boolean>(false);
-    const [showAllPRs, setShowAllPRs] = useState<boolean>(false);
     const [selectedCommits, setSelectedCommits] = useState<string[]>([]);
+    const [prSearchQuery, setPrSearchQuery] = useState<string>("");
 
     // Each PR can have multiple assigned tasks from asana
     const [assignedTasks, setAssignedTasks] = useState<{ [key: number]: (AsanaTask)[] }>({});
@@ -351,8 +351,10 @@ const TimeReportApp = () => {
     const currentPRNumber = selectedPRNumbers[currentPRIndex];
     const currentCommitData = prCommits[currentPRNumber];
 
-    const displayedPRs = showAllPRs ? pullRequests : pullRequests.slice(0, 8);
     const { ContextMenuPortal } = useContextMenu();
+    const prsToShow = prSearchQuery
+        ? pullRequests.filter(pr => pr.title.toLowerCase().includes(prSearchQuery.toLowerCase()))
+        : pullRequests;
 
     return (
         <>
@@ -421,14 +423,14 @@ const TimeReportApp = () => {
                             {selectedRepo && (
                                 <PullRequestsList
                                     loading={loading}
-                                    pullRequests={displayedPRs}
+                                    pullRequests={prsToShow}
                                     selectedPRs={selectedPRs}
                                     loadingCommits={loadingCommits}
-                                    showAllPRs={showAllPRs}
+                                    prSearchQuery={prSearchQuery}
+                                    setPrSearchQuery={setPrSearchQuery}
                                     assignedTasks={assignedTasks}
                                     allPRsCount={pullRequests.length}
                                     onPRSelect={handlePRSelection}
-                                    onToggleShowAll={() => setShowAllPRs(!showAllPRs)}
                                     onCopyLink={(url: any) => copyToClipboard(url)}
                                     setAssignedTasks={setAssignedTasks}
                                     removeAssignedTask={(prNumber: number, taskId: string) => {
@@ -451,6 +453,7 @@ const TimeReportApp = () => {
                                     onCopyLink={() => copyToClipboard(currentCommitData.pull_url)}
                                     selectedCommits={selectedCommits}
                                     onCommitSelectionChange={handleCommitSelectionChange}
+                                    setSelectedCommits={setSelectedCommits}
                                 />
                             )}
 
