@@ -29,33 +29,29 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
     return (
         <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
-                <label className="text-sm text-zinc-400">Välj repository</label>
-                <button
-                    onClick={onOpenTokenModal}
-                    className="text-xs text-brand-400 hover:text-brand-300"
-                >
-                    Ändra tokens
-                </button>
+                <label className="text-sm text-gray-600 dark:text-zinc-400">Välj repository</label>
             </div>
             <div className="relative">
                 <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-between hover:border-zinc-700 transition-colors"
+                    className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg flex items-center justify-between hover:border-gray-400 dark:hover:border-zinc-700 transition-colors"
                 >
                     <span className="flex items-center gap-2">
-                        <Github className="w-4 h-4 text-zinc-500" />
-                        {selectedRepo ? repos.find(r => r.full_name === selectedRepo)?.name : "Välj ett repository..."}
+                        <Github className="w-4 h-4 text-gray-500 dark:text-zinc-500" />
+                        <span className="text-gray-900 dark:text-white">
+                            {selectedRepo ? repos.find(r => r.full_name === selectedRepo)?.name : "Välj ett repository..."}
+                        </span>
                     </span>
-                    <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`w-4 h-4 text-gray-500 dark:text-zinc-500 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {dropdownOpen && (
-                    <div className="absolute z-10 w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
+                    <div className="absolute z-10 w-full mt-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg shadow-xl">
                         <div className="max-h-64 overflow-y-auto">
                             {repos.map(repo => (
                                 <div
                                     key={repo.id}
-                                    className="px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-colors group rounded-lg"
+                                    className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors group rounded-lg"
                                 >
                                     <button
                                         onClick={() => {
@@ -64,13 +60,13 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
                                         }}
                                         className="flex-1 flex items-center gap-2 text-left"
                                     >
-                                        <GitBranch className="w-4 h-4 text-zinc-500" />
-                                        <span>{repo.name}</span>
+                                        <GitBranch className="w-4 h-4 text-gray-500 dark:text-zinc-500" />
+                                        <span className="text-gray-900 dark:text-white">{repo.name}</span>
                                         {repo.organization && (
-                                            <WordTag word={repo.organization} className="bg-zinc-800 text-zinc-400" />
+                                            <WordTag word={repo.organization} className="bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400" />
                                         )}
                                         {repo.private && (
-                                            <WordTag word="Private" className="bg-brand-900/30 text-brand-400" />
+                                            <WordTag word="Private" className="bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400" />
                                         )}
                                     </button>
                                     <div className="flex items-center gap-1">
@@ -79,10 +75,10 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
                                                 e.stopPropagation();
                                                 onToggleFavorite(repo.id);
                                             }}
-                                            className="p-1 hover:bg-zinc-700 rounded"
+                                            className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded"
                                         >
                                             <Star
-                                                className={`w-4 h-4 ${favorites.includes(String(repo.id)) ? "fill-yellow-500 text-yellow-500" : "text-zinc-500"}`}
+                                                className={`w-4 h-4 ${favorites.includes(String(repo.id)) ? "fill-yellow-500 text-yellow-500" : "text-gray-400 dark:text-zinc-500"}`}
                                             />
                                         </button>
                                         <button
@@ -90,9 +86,9 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
                                                 e.stopPropagation();
                                                 onRemoveRepo(repo.full_name);
                                             }}
-                                            className="p-1 hover:bg-zinc-700 rounded opacity-[0.4] group-hover:opacity-100 transition-opacity"
+                                            className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded opacity-[0.4] group-hover:opacity-100 transition-opacity"
                                         >
-                                            <X className="w-4 h-4 text-zinc-500" />
+                                            <X className="w-4 h-4 text-gray-400 dark:text-zinc-500" />
                                         </button>
                                     </div>
                                 </div>
@@ -103,10 +99,10 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({
                                 setDropdownOpen(false);
                                 onAddRepo();
                             }}
-                            className="w-full px-4 py-3 flex items-center gap-2 hover:bg-zinc-800 transition-colors border-t border-zinc-800 rounded-lg"
+                            className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors border-t border-gray-200 dark:border-zinc-800 rounded-lg"
                         >
-                            <Plus className="w-4 h-4 text-brand-500" />
-                            <span className="text-brand-400">Add repo</span>
+                            <Plus className="w-4 h-4 text-brand-600 dark:text-brand-500" />
+                            <span className="text-brand-600 dark:text-brand-400">Lägg till repository</span>
                         </button>
                     </div>
                 )}

@@ -78,13 +78,13 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
     }
 
     return (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
+        <div className="bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
+                <h3 className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white">
                     <GitPullRequestArrow className="w-5 h-5 text-brand-500" />
                     Pull Requests
 
-                    <p className="text-sm text-zinc-500">
+                    <p className="text-sm text-gray-500 dark:text-zinc-500">
                         (visar {allPRsCount} {allPRsCount === 1 ? "PR" : "PRs"})
                     </p>
                 </h3>
@@ -93,6 +93,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                     searchQuery={prSearchQuery}
                     setSearchQuery={setPrSearchQuery}
                     className="relative flex-1 max-w-xs"
+                    placeholder="Sök PR..."
                 />
             </div>
 
@@ -101,7 +102,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                     <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
                 </div>
             ) : pullRequests.length === 0 ? (
-                <p className="text-zinc-500 text-center py-8">
+                <p className="text-gray-500 dark:text-zinc-500 text-center py-8">
                     Inga pull requests hittades
                 </p>
             ) : (
@@ -124,8 +125,8 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                     <div
                                         key={pr.id}
                                         className={`p-4 rounded-lg border transition-all cursor-pointer ${selectedPRs.has(pr.id)
-                                            ? "bg-brand-950/30 border-brand-800"
-                                            : "bg-zinc-800/50 border-zinc-800 hover:bg-zinc-800"
+                                            ? "bg-brand-50 dark:bg-brand-950/30 border-brand-300 dark:border-brand-800"
+                                            : "bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800"
                                         }`}
                                     >
                                         <div className="flex items-start gap-3">
@@ -133,7 +134,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                                 onClick={() => onPRSelect(pr)}
                                                 className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${selectedPRs.has(pr.id)
                                                     ? "bg-brand-600 border-brand-600"
-                                                    : "border-zinc-600"
+                                                    : "border-gray-400 dark:border-zinc-600"
                                                 }`}
                                                 tabIndex={0}
                                             >
@@ -141,13 +142,13 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex items-baseline gap-2 mb-1">
-                                                    <span className="text-sm text-zinc-500">#{pr.number}</span>
-                                                    <h4 className="font-medium text-gray-200">{pr.title}</h4>
+                                                    <span className="text-sm text-gray-500 dark:text-zinc-500">#{pr.number}</span>
+                                                    <h4 className="font-medium text-gray-900 dark:text-gray-200">{pr.title}</h4>
                                                     {loadingCommits[pr.number] && (
                                                         <Loader2 className="w-3 h-3 animate-spin text-brand-500" />
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-zinc-500 justify-start items-end flex gap-2">
+                                                <div className="text-sm text-gray-600 dark:text-zinc-500 justify-start items-end flex gap-2">
                                                     {new Date(pr.created_at).toLocaleDateString("sv-SE")}
                                                     <a href={pr.user.html_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                                         {pr.user.login}
@@ -160,11 +161,11 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                                     <div className="items-center inline-block mt-1 flex-wrap max-w-[20rem] overflow-x-scroll">
                                                         <div className="inline-flex items-center gap-1">
                                                             {getAutoMergeMethodTag(pr.auto_merge?.merge_method)}
-                                                            {pr.draft && <WordTag word={"Draft"} className="bg-yellow-900 text-yellow-400" />}
-                                                            {pr.state === "closed" && <WordTag word={"Stängd"} className="bg-zinc-700 text-zinc-300" />}
-                                                            {pr.state === "merged" && <WordTag word={"Merge:ad"} className="bg-green-900 text-green-400" />}
-                                                            {pr.state === "open" && <WordTag word={"Öppen"} className="bg-blue-900 text-blue-400" />}
-                                                            {pr.merged_at && <WordTag word={`Merge:ad ${getTimeDescription(pr.merged_at)}`} className="bg-green-900 text-green-400" />}
+                                                            {pr.draft && <WordTag word={"Draft"} className="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-400" />}
+                                                            {pr.state === "closed" && <WordTag word={"Stängd"} className="bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300" />}
+                                                            {pr.state === "merged" && <WordTag word={"Merge:ad"} className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400" />}
+                                                            {pr.state === "open" && <WordTag word={"Öppen"} className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-400" />}
+                                                            {pr.merged_at && <WordTag word={`Merge:ad ${getTimeDescription(pr.merged_at)}`} className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400" />}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -183,22 +184,22 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                                         e.stopPropagation();
                                                         window.open(pr.html_url, "_blank");
                                                     }}
-                                                    className="p-1.5 hover:bg-zinc-700 rounded transition-colors ml-2"
+                                                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors ml-2"
                                                     title="Öppna PR"
                                                     tabIndex={-1}
                                                 >
-                                                    <ExternalLink className="w-4 h-4 text-zinc-400" />
+                                                    <ExternalLink className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onCopyLink(pr.html_url);
                                                     }}
-                                                    className="p-1.5 hover:bg-zinc-700 rounded transition-colors"
+                                                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
                                                     title="Kopiera länk"
                                                     tabIndex={-1}
                                                 >
-                                                    <Copy className="w-4 h-4 text-zinc-400" />
+                                                    <Copy className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                                                 </button>
                                             </div>
                                         </div>
@@ -206,7 +207,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                 </DropArea>
                             ))}
                         </div>
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-zinc-900 to-transparent"></div>
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-white dark:from-zinc-900 to-transparent"></div>
                     </div>
                 </>
             )}

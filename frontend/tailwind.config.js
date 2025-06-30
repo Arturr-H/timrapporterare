@@ -1,7 +1,9 @@
+// frontend/tailwind.config.js - Uppdaterad version
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  darkMode: 'class', // Enable dark mode with class strategy
   theme: {
     extend: {
       colors: {
@@ -19,6 +21,7 @@ module.exports = {
           700: '#6d28d9',
           800: '#5b21b6',
           900: '#4c1d95',
+          950: '#3b0764',
         }
       }
     },

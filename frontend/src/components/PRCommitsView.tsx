@@ -46,11 +46,11 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
     }, [onNext, onPrev]);
 
     return (
-        <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+        <div className="mb-8 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex-1 flex items-center gap-2">
                     <Construction className="w-5 h-5 text-brand-500" />
-                    <h3 className="text-lg font-medium mb-0">
+                    <h3 className="text-lg font-medium mb-0 text-gray-900 dark:text-white">
                         Commits in #{currentCommitData.pull_url.split("/").pop()}
                     </h3>
                 </div>
@@ -59,21 +59,21 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                     <button
                         onClick={onPrev}
                         disabled={currentPRIndex === 0}
-                        className="p-2 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-gray-50 dark:bg-zinc-800"
                     >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
                     <div className="w-96 overflow-hidden text-center">
-                        <h3 className="text-lg font-medium text-zinc-100 truncate">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100 truncate">
                             {currentCommitData.pull_title.trim()}
                         </h3>
                     </div>
                     <button
                         onClick={onNext}
                         disabled={currentPRIndex === selectedPRNumbers.length - 1}
-                        className="p-2 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-gray-50 dark:bg-zinc-800"
                     >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
                 </div>
 
@@ -84,7 +84,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                             title="Markera / Avmarkera alla commits"
                             className={`cursor-pointer w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${currentCommitData.commits.every(commit => selectedCommits.includes(commit.sha))
                                 ? "bg-brand-600 border-brand-600"
-                                : "border-zinc-600"
+                                : "border-gray-400 dark:border-zinc-600"
                                 }`}
                             onClick={() => {
                                 let isSelected = currentCommitData.commits.every(commit => selectedCommits.includes(commit.sha));
@@ -112,10 +112,10 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
 
                     <button
                         onClick={onCopyLink}
-                        className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                         title="Kopiera PR länk"
                     >
-                        <Copy className="w-4 h-4 text-zinc-400" />
+                        <Copy className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                     </button>
                 </div>
             </div>
@@ -129,14 +129,14 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                         return (
                             <div
                                 key={idx}
-                                className="p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors"
+                                className="p-3 bg-gray-50 dark:bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                             >
                                 <div className="flex items-start gap-3">
                                     <div className="flex items-center pt-0.5">
                                         <button
                                             className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 transition-all ${isSelected
                                                 ? "bg-brand-600 border-brand-600"
-                                                : "border-zinc-600"
+                                                : "border-gray-400 dark:border-zinc-600"
                                                 }`}
                                             onClick={() => handleCommitCheck(commit.sha, !isSelected)}
                                             tabIndex={0}
@@ -150,18 +150,18 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                                             className="flex-1 text-left"
                                             onClick={() => handleCommitCheck(commit.sha, !isSelected)}
                                         >
-                                            <p className="text-sm text-gray-300">{commit.message}</p>
-                                            <p className="text-xs text-zinc-500 mt-1">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">{commit.message}</p>
+                                            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
                                                 {commit.sha.substring(0, 7)} • {commit.author} • {new Date(commit.date).toLocaleDateString("sv-SE")}
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => window.open(commit.url, "_blank")}
-                                            className="p-2 hover:bg-zinc-700 rounded transition-colors"
+                                            className="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
                                             title="Öppna commit"
                                             tabIndex={-1} // Prevent focus
                                         >
-                                            <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                                            <ExternalLink className="w-3.5 h-3.5 text-gray-500 dark:text-zinc-400" />
                                         </button>
                                     </div>
                                 </div>
@@ -169,7 +169,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                         );
                     })}
                 </div>
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-zinc-900 to-transparent"></div>
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-white dark:from-zinc-900 to-transparent"></div>
             </div>
         </div>
     );
