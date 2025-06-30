@@ -13,6 +13,19 @@ interface SettingsModalProps {
     onThemeChange: (theme: 'dark' | 'light') => void;
 }
 
+const themes = [
+    { name: 'Lila (Standard)', value: 'purple', color: '#8b5cf6' },
+    { name: 'Blå', value: 'blue', color: '#3b82f6' },
+    { name: 'Grön', value: 'green', color: '#10b981' },
+    { name: 'Röd', value: 'red', color: '#ef4444' },
+    { name: 'Orange', value: 'orange', color: '#f97316' },
+    { name: 'Rosa', value: 'pink', color: '#ec4899' },
+    { name: 'Cyan', value: 'cyan', color: '#06b6d4' },
+    { name: 'Teal', value: 'teal', color: '#14b8a6' },
+    { name: 'Indigo', value: 'indigo', color: '#6366f1' },
+    { name: 'Gul', value: 'yellow', color: '#eab308' },
+];
+
 const SettingsModal: React.FC<SettingsModalProps> = ({
     isOpen,
     onClose,
@@ -70,6 +83,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* General Tab */}
                 {activeTab === 'general' && (
                     <div className="space-y-6">
+                        {/* tema-toggle */}
                         <div>
                             <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">Utseende</h4>
                             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
@@ -96,6 +110,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         }`}
                                     />
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* färgväljare */}
+                        <div>
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">Accentfärg</h4>
+                            <div className="grid grid-cols-5 gap-2">
+                                {themes.map((theme) => (
+                                    <button
+                                        key={theme.value}
+                                        onClick={() => {
+                                            localStorage.setItem('brandColor', theme.value);
+                                            document.documentElement.className = document.documentElement.className
+                                                .replace(/brand-\w+/, `brand-${theme.value}`);
+                                        }}
+                                        className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                        <div 
+                                            className="w-8 h-8 rounded-full" 
+                                            style={{ backgroundColor: theme.color }}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-zinc-400">{theme.name}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>

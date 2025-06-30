@@ -48,24 +48,26 @@ const DateFilter: React.FC<DateFilterProps> = ({ selectedFilters, onFilterChange
     };
     
     return (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col md:flex-row md:items-center gap-2">
             <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-400">
                 <Calendar className="w-4 h-4" />
                 <span>Filter:</span>
             </div>
-            {dateFilters.map((filter) => (
-                <button
-                    key={filter.value}
-                    onClick={() => toggleFilter(filter.value)}
-                    className={`px-3 py-1 text-sm rounded-full transition-all ${
-                        selectedFilters.includes(filter.value)
-                            ? 'bg-brand-600 text-white hover:bg-brand-700'
-                            : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
-                    }`}
-                >
-                    {filter.label}
-                </button>
-            ))}
+            <div className="flex flex-wrap gap-2">
+                {dateFilters.map((filter) => (
+                    <button
+                        key={filter.value}
+                        onClick={() => toggleFilter(filter.value)}
+                        className={`px-3 py-1 text-sm rounded-full transition-all ${
+                            selectedFilters.includes(filter.value)
+                                ? 'bg-brand-600 text-white hover:bg-brand-700'
+                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                        }`}
+                    >
+                        {filter.label}
+                    </button>
+                ))}
+            </div>
             {selectedFilters.length > 0 && (
                 <button
                     onClick={() => onFilterChange([])}

@@ -47,15 +47,15 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
 
     return (
         <div className="mb-8 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex-1 flex items-center gap-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+                <div className="flex-1 flex items-center gap-2 order-2 md:order-1">
                     <Construction className="w-5 h-5 text-brand-500" />
                     <h3 className="text-lg font-medium mb-0 text-gray-900 dark:text-white">
                         Commits in #{currentCommitData.pull_url.split("/").pop()}
                     </h3>
                 </div>
 
-                <div className="flex-1 flex items-center justify-center gap-4">
+                <div className="flex items-center justify-center gap-4 order-1 md:order-2 w-full md:w-auto">
                     <button
                         onClick={onPrev}
                         disabled={currentPRIndex === 0}
@@ -63,7 +63,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                     >
                         <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
-                    <div className="w-96 overflow-hidden text-center">
+                    <div className="flex-1 md:w-96 overflow-hidden text-center">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100 truncate">
                             {currentCommitData.pull_title.trim()}
                         </h3>
@@ -77,8 +77,7 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                     </button>
                 </div>
 
-                <div className="flex-1 flex justify-end gap-2">
-                    {/* Select / deselect all */}
+                <div className="flex justify-end gap-2 order-3">
                     <div className="flex items-center">
                         <button
                             title="Markera / Avmarkera alla commits"
@@ -117,9 +116,9 @@ const PRCommitsView: React.FC<PRCommitsViewProps> = ({
                     >
                         <Copy className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                     </button>
+
                 </div>
             </div>
-
 
             <div className="relative">
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-2 pb-2 h-80">

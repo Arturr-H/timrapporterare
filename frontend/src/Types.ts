@@ -49,4 +49,5 @@ export interface AsanaTask {
     name: string;
     due_on?: string;
     permalink_url: string;
+    section?: string;
 }

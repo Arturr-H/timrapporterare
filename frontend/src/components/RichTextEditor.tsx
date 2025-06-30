@@ -235,11 +235,11 @@ const TimeReportNotes = ({ generateSuggestion }: TimeReportNotesProps) => {
                         Rapport
                     </h3>
 
-                    <div className="flex flex-1 items-center gap-2">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2">
                         <button
                             disabled={loadingSuggestion || isStreaming}
                             onClick={handleGenerateSuggestion}
-                            className="relative px-4 py-2 bg-brand-700 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-white flex items-center gap-2 ml-auto justify-center"
+                            className="relative px-4 py-2 bg-brand-700 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-white flex items-center gap-2 md:ml-auto justify-center w-full md:w-auto"
                         >
                             {isStreaming ? (
                                 <span className="flex items-center gap-2">
@@ -252,7 +252,7 @@ const TimeReportNotes = ({ generateSuggestion }: TimeReportNotesProps) => {
                                         className="flex items-center gap-2 transition-opacity duration-300"
                                         style={{ opacity: loadingSuggestion ? 0 : 1 }}
                                     >
-                                        <Brain className="w-4 h-4" /> Super AI 2000 förslag
+                                        <Brain className="w-4 h-4" />
                                     </span>
 
                                     {loadingSuggestion && (
@@ -264,21 +264,23 @@ const TimeReportNotes = ({ generateSuggestion }: TimeReportNotesProps) => {
                             )}
                         </button>
 
-                        <button
-                            onClick={handleCopy}
-                            disabled={isStreaming}
-                            className="px-4 py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-gray-900 dark:text-white flex items-center gap-2"
-                        >
-                            <ClipboardCopy className="w-4 h-4" /> Kopiera
-                        </button>
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button
+                                onClick={handleCopy}
+                                disabled={isStreaming}
+                                className="flex-1 md:flex-initial px-4 py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-gray-900 dark:text-white flex items-center gap-2 justify-center"
+                            >
+                                <ClipboardCopy className="w-4 h-4" /> Kopiera
+                            </button>
 
-                        <button
-                            onClick={handleClear}
-                            disabled={isStreaming}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-white flex items-center gap-2"
-                        >
-                            <Trash2 className="w-4 h-4" /> Radera
-                        </button>
+                            <button
+                                onClick={handleClear}
+                                disabled={isStreaming}
+                                className="flex-1 md:flex-initial px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium text-white flex items-center gap-2 justify-center"
+                            >
+                                <Trash2 className="w-4 h-4" /> Radera
+                            </button>
+                        </div>
                     </div>
                 </div>
 

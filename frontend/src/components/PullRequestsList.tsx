@@ -79,11 +79,10 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
 
     return (
         <div className="bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-800 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
                 <h3 className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white">
                     <GitPullRequestArrow className="w-5 h-5 text-brand-500" />
                     Pull Requests
-
                     <p className="text-sm text-gray-500 dark:text-zinc-500">
                         (visar {allPRsCount} {allPRsCount === 1 ? "PR" : "PRs"})
                     </p>
@@ -92,7 +91,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                 <SearchBar
                     searchQuery={prSearchQuery}
                     setSearchQuery={setPrSearchQuery}
-                    className="relative flex-1 max-w-xs"
+                    className="relative flex-1 md:max-w-xs w-full"
                     placeholder="Sök PR..."
                 />
             </div>

@@ -303,6 +303,8 @@ async def get_asana_user(asana_token: Optional[str] = Header(None)):
         
         return response.json()
 
+# I backend/main.py - ersätt get_asana_tasks funktionen med denna:
+
 @app.get("/api/asana/tasks")
 async def get_asana_tasks(asana_token: Optional[str] = Header(None)):
     """Hämta tasks assigned to current user"""
@@ -335,14 +337,36 @@ async def get_asana_tasks(asana_token: Optional[str] = Header(None)):
                 "assignee": user_gid,
                 "workspace": workspace_gid,
                 "completed_since": "now",
-                "opt_fields": "name,completed,due_on,projects,permalink_url,created_at,modified_at"
+                "opt_fields": "name,completed,due_on,projects,permalink_url,created_at,modified_at,memberships.section.name"
             }
         )
         
         if tasks_response.status_code != 200:
             raise HTTPException(status_code=tasks_response.status_code, detail="Kunde inte hämta tasks")
         
-        return tasks_response.json()
+        # Process tasks to extract section info
+        tasks_data = tasks_response.json()["data"]
+        processed_tasks = []
+        
+        for task in tasks_data:
+            # Extract section from memberships
+            section = None
+            if "memberships" in task and task["memberships"]:
+                for membership in task["memberships"]:
+                    if "section" in membership and membership["section"]:
+                        section = membership["section"].get("name", None)
+                        break
+            
+            processed_task = {
+                "gid": task["gid"],
+                "name": task["name"],
+                "due_on": task.get("due_on"),
+                "permalink_url": task["permalink_url"],
+                "section": section
+            }
+            processed_tasks.append(processed_task)
+        
+        return {"data": processed_tasks}
 
 from typing import Dict, List, Optional
 
