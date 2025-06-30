@@ -1,4 +1,3 @@
-// App.tsx
 import React, { useState, useEffect } from "react";
 import { AlertCircle, Calendar, GitBranch } from "lucide-react";
 import axios from "axios";
@@ -10,7 +9,9 @@ import RepositorySelector from "./components/RepositorySelector";
 import PRCommitsView from "./components/PRCommitsView";
 import PullRequestsList from "./components/PullRequestsList";
 import TimeReportNotes from "./components/RichTextEditor";
-import { DragAndDroppableItem, DropArea, useContextMenu } from "./components/DragAndDrop";
+import { DragAndDroppableItem, DropArea, useContextMenu, DragThumbnail } from "./components/DragAndDrop";
+import SettingsModal from "./components/SettingsModal";
+import DateFilter from "./components/DateFilter";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8086";
 
@@ -28,6 +29,7 @@ const TimeReportApp = () => {
     const [githubToken, setGithubToken] = useState<string>("");
     const [asanaToken, setAsanaToken] = useState<string>("");
     const [tokenModalOpen, setTokenModalOpen] = useState<boolean>(true);
+    const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
     const [addRepoModalOpen, setAddRepoModalOpen] = useState<boolean>(false);
     const [repoUrl, setRepoUrl] = useState<string>("");
     const [error, setError] = useState<string>("");
@@ -35,6 +37,8 @@ const TimeReportApp = () => {
     const [loadingAsana, setLoadingAsana] = useState<boolean>(false);
     const [selectedCommits, setSelectedCommits] = useState<string[]>([]);
     const [prSearchQuery, setPrSearchQuery] = useState<string>("");
+    const [dateFilters, setDateFilters] = useState<string[]>([]);
+    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
     // Each PR can have multiple assigned tasks from asana
     const [assignedTasks, setAssignedTasks] = useState<{ [key: number]: (AsanaTask)[] }>({});
@@ -45,6 +49,20 @@ const TimeReportApp = () => {
         month: "long",
         day: "numeric"
     });
+
+    // Initialize theme
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' || 'dark';
+        setTheme(savedTheme);
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+    }, []);
+
+    // Handle theme change
+    const handleThemeChange = (newTheme: 'dark' | 'light') => {
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    };
 
     // Initialize tokens from localStorage
     useEffect(() => {
@@ -111,6 +129,7 @@ const TimeReportApp = () => {
             setSelectedPRs(new Set());
             setPrCommits({});
             setCurrentPRIndex(0);
+            setDateFilters([]); // Reset date filters when changing repo
         } catch (err) {
             setError("Kunde inte hämta pull requests.");
             console.error("Error fetching PRs:", err);
@@ -266,7 +285,7 @@ const TimeReportApp = () => {
         }
     };
 
-    const handleGenerateSuggestion = async (): Promise<string> => {
+    const handleGenerateSuggestion = async (): Promise<any> => {
         try {
             // Förbered PR data med endast valda PRs
             const selectedPRNumbers = Array.from(selectedPRs).map(id =>
@@ -288,7 +307,7 @@ const TimeReportApp = () => {
             // Kontrollera att vi har commits valda
             if (selectedCommits.length === 0) {
                 console.error('Inga commits valda');
-                return 'Inga commits valda';
+                throw new Error('Inga commits valda');
             }
 
             console.log('Genererar timrapport med:', {
@@ -300,37 +319,17 @@ const TimeReportApp = () => {
                 }, {})
             });
 
-            // Anropa backend
-            const response = await axios.post(
-                `${API_URL}/api/generate-time-report`,
-                {
-                    commits: selectedCommits,
-                    pr_data: prDataMap
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${githubToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 30000  // 30 sekunder timeout
-                }
-            );
-
-            console.log('=== AI GENERERAD TIMRAPPORT ===');
-            console.log(response.data.report);
-            console.log('===============================');
-
-            return response.data.report;
+            // Return the data for streaming endpoint
+            return {
+                commits: selectedCommits,
+                pr_data: prDataMap
+            };
 
         } catch (error: any) {
             console.error('Fel vid generering av timrapport:', error);
-            if (error.response) {
-                console.error('Backend svar:', error.response.data);
-            }
-
-            return "Något gick snett"
+            throw error;
         }
-    }
+    };
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -352,19 +351,36 @@ const TimeReportApp = () => {
     const currentCommitData = prCommits[currentPRNumber];
 
     const { ContextMenuPortal } = useContextMenu();
-    const prsToShow = prSearchQuery
-        ? pullRequests.filter(pr => pr.title.toLowerCase().includes(prSearchQuery.toLowerCase()))
-        : pullRequests;
+
+    // Filter PRs based on search and date filters
+    let prsToShow = pullRequests;
+    
+    // Apply search filter
+    if (prSearchQuery) {
+        prsToShow = prsToShow.filter(pr => 
+            pr.title.toLowerCase().includes(prSearchQuery.toLowerCase())
+        );
+    }
+    
+    // Apply date filters
+    if (dateFilters.length > 0) {
+        prsToShow = prsToShow.filter(pr => {
+            const prDate = new Date(pr.created_at).toISOString().split('T')[0];
+            return dateFilters.includes(prDate);
+        });
+    }
 
     return (
         <>
             <ContextMenuPortal />
-            <div className="h-screen bg-black text-gray-100 flex overflow-hidden">
+            <DragThumbnail />
+            <div className="h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 flex overflow-hidden">
 
                 <AsanaSidebar
                     loadingAsana={loadingAsana}
                     asanaTasks={asanaTasks}
                     copyToClipboard={copyToClipboard}
+                    onOpenSettings={() => setSettingsModalOpen(true)}
                 />
 
                 <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -378,6 +394,18 @@ const TimeReportApp = () => {
                         onClose={() => setTokenModalOpen(false)}
                     />
 
+                    <SettingsModal
+                        isOpen={settingsModalOpen}
+                        onClose={() => setSettingsModalOpen(false)}
+                        githubToken={githubToken}
+                        asanaToken={asanaToken}
+                        onGithubTokenChange={setGithubToken}
+                        onAsanaTokenChange={setAsanaToken}
+                        onSaveTokens={saveTokens}
+                        theme={theme}
+                        onThemeChange={handleThemeChange}
+                    />
+
                     <AddRepoModal
                         isOpen={addRepoModalOpen}
                         repoUrl={repoUrl}
@@ -389,23 +417,23 @@ const TimeReportApp = () => {
                         }}
                     />
 
-                    <div className="flex-1 overflow-y-auto px-8 py-8">
+                    <div className="flex-1 overflow-y-auto px-8 py-8 bg-white dark:bg-black">
                         <div className="max-w-5xl mx-auto">
                             <div className="mb-12 flex items-center justify-between">
-                                <h2 className="text-4xl font-bold text-white">
-                                    Timrapport{selectedRepo ? ":" : ""} <span className="text-brand-400">{selectedRepo}</span>
+                                <h2 className="text-4xl font-bold text-gray-900 dark:text-white">
+                                    Timrapport{selectedRepo ? ":" : ""} <span className="text-brand-600 dark:text-brand-400">{selectedRepo}</span>
                                 </h2>
 
                                 <div className="inline-flex items-center gap-3">
                                     <Calendar className="w-5 h-5 text-brand-500" />
-                                    <h1 className="text-xl">{currentDate}</h1>
+                                    <h1 className="text-xl text-gray-700 dark:text-gray-300">{currentDate}</h1>
                                 </div>
                             </div>
 
                             {error && (
-                                <div className="mb-6 p-4 bg-red-950 border border-red-900 rounded-lg flex items-center gap-2">
-                                    <AlertCircle className="w-5 h-5 text-red-400" />
-                                    <p className="text-red-400">{error}</p>
+                                <div className="mb-6 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-lg flex items-center gap-2">
+                                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                    <p className="text-red-600 dark:text-red-400">{error}</p>
                                 </div>
                             )}
 
@@ -421,26 +449,34 @@ const TimeReportApp = () => {
                             />
 
                             {selectedRepo && (
-                                <PullRequestsList
-                                    loading={loading}
-                                    pullRequests={prsToShow}
-                                    selectedPRs={selectedPRs}
-                                    loadingCommits={loadingCommits}
-                                    prSearchQuery={prSearchQuery}
-                                    setPrSearchQuery={setPrSearchQuery}
-                                    assignedTasks={assignedTasks}
-                                    allPRsCount={pullRequests.length}
-                                    onPRSelect={handlePRSelection}
-                                    onCopyLink={(url: any) => copyToClipboard(url)}
-                                    setAssignedTasks={setAssignedTasks}
-                                    removeAssignedTask={(prNumber: number, taskId: string) => {
-                                        setAssignedTasks(prev => {
-                                            const updated = { ...prev };
-                                            updated[prNumber] = updated[prNumber].filter(task => task.gid !== taskId);
-                                            return updated;
-                                        });
-                                    }}
-                                />
+                                <>
+                                    <div className="mb-4">
+                                        <DateFilter
+                                            selectedFilters={dateFilters}
+                                            onFilterChange={setDateFilters}
+                                        />
+                                    </div>
+                                    <PullRequestsList
+                                        loading={loading}
+                                        pullRequests={prsToShow}
+                                        selectedPRs={selectedPRs}
+                                        loadingCommits={loadingCommits}
+                                        prSearchQuery={prSearchQuery}
+                                        setPrSearchQuery={setPrSearchQuery}
+                                        assignedTasks={assignedTasks}
+                                        allPRsCount={pullRequests.length}
+                                        onPRSelect={handlePRSelection}
+                                        onCopyLink={(url: any) => copyToClipboard(url)}
+                                        setAssignedTasks={setAssignedTasks}
+                                        removeAssignedTask={(prNumber: number, taskId: string) => {
+                                            setAssignedTasks(prev => {
+                                                const updated = { ...prev };
+                                                updated[prNumber] = updated[prNumber].filter(task => task.gid !== taskId);
+                                                return updated;
+                                            });
+                                        }}
+                                    />
+                                </>
                             )}
 
                             {selectedPRNumbers.length > 0 && currentCommitData && (

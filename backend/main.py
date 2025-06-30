@@ -9,7 +9,12 @@ from datetime import datetime
 import re
 import openai
 from typing import Dict, List
+from fastapi.responses import StreamingResponse
+from sse_starlette.sse import EventSourceResponse
+import asyncio
+from openai import AsyncOpenAI
 
+async_openai_client = None
 app = FastAPI()
 
 # CORS middleware
@@ -78,9 +83,12 @@ def load_ai_prompt():
 # Lägg till i app startup event
 @app.on_event("startup")
 async def startup_event():
+    global async_openai_client
     load_ai_prompt()
     # Sätt OpenAI API key från env
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        async_openai_client = AsyncOpenAI(api_key=api_key)
 
 @app.get("/api/saved-repos")
 async def get_saved_repos(authorization: Optional[str] = Header(None)):
@@ -406,6 +414,58 @@ async def generate_time_report(request: TimeReportRequest):
         print(f"Error in generate_time_report: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internt fel: {str(e)}")
 
+@app.post("/api/generate-time-report-stream")
+async def generate_time_report_stream(request: TimeReportRequest):
+    """Generera timrapport med streaming AI respons"""
+    try:
+        if not request.commits:
+            raise HTTPException(status_code=400, detail="Inga commits valda")
+        
+        if not request.pr_data:
+            raise HTTPException(status_code=400, detail="Ingen PR data tillgänglig")
+        
+        # Skapa sammanställning
+        pr_data_dict = {k: v.dict() for k, v in request.pr_data.items()}
+        report_text = create_commit_summary(request.commits, pr_data_dict)
+        
+        async def generate():
+            try:
+                # Skicka initial metadata
+                yield f"data: {json.dumps({'type': 'start', 'stats': {'total_commits': len(request.commits), 'total_prs': len(request.pr_data), 'total_tasks': sum(len(pr.asana_tasks) for pr in request.pr_data.values())}})}\n\n"
+                
+                # Anropa ChatGPT med streaming
+                stream = await async_openai_client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": AI_PROMPT},
+                        {"role": "user", "content": report_text}
+                    ],
+                    temperature=0.7,
+                    max_tokens=1000,
+                    stream=True
+                )
+                
+                async for chunk in stream:
+                    if chunk.choices[0].delta.content is not None:
+                        content = chunk.choices[0].delta.content
+                        # Escape newlines for SSE format
+                        content = content.replace('\n', '\\n')
+                        yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
+                
+                # Skicka complete signal
+                yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+                
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        
+        return EventSourceResponse(generate())
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in generate_time_report_stream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internt fel: {str(e)}")
+
 def create_commit_summary(selected_commits: List[str], pr_data: Dict) -> str:
     """Skapa textsammanställning av valda commits grupperade per PR med Asana tasks"""
     summary_parts = []
@@ -460,6 +520,8 @@ async def call_chatgpt(report_text: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise Exception(f"ChatGPT API error: {str(e)}")
+
+
 
 @app.get("/api/health")
 async def health_check():
