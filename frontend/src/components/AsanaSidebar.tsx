@@ -58,7 +58,7 @@ const AsanaSidebar: React.FC<AsanaSidebarProps> = ({
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3 overflow-y-auto max-h-full px-3 py-3">
+                    <div className="space-y-3 overflow-y-auto max-h-full px-3 py-3" data-keyboard-scroll-container>
                         {displayTasks.map((task, index) => (
                             <DragAndDroppableItem 
                                 data={task} 
@@ -69,7 +69,7 @@ const AsanaSidebar: React.FC<AsanaSidebarProps> = ({
                             >
                                 <div className="p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
                                     <div className="flex items-start justify-between gap-2">
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 flex-1">{task.name}</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 flex-1" data-keyboard-searchable>{task.name}</p>
                                         <div className="flex items-center gap-1 flex-shrink-0">
                                             <button
                                                 onClick={(e) => {

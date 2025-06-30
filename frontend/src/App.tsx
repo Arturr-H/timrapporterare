@@ -12,6 +12,7 @@ import TimeReportNotes from "./components/RichTextEditor";
 import { DragAndDroppableItem, DropArea, useContextMenu, DragThumbnail } from "./components/DragAndDrop";
 import SettingsModal from "./components/SettingsModal";
 import DateFilter from "./components/DateFilter";
+import KeyboardSearch from "./handlers/KeyboardSearch";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8086";
 
@@ -374,6 +375,8 @@ const TimeReportApp = () => {
         <>
             <ContextMenuPortal />
             <DragThumbnail />
+            <KeyboardSearch />
+
             <div className="h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 flex overflow-hidden">
 
                 <AsanaSidebar

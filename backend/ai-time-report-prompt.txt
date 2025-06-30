@@ -1,27 +1,29 @@
 Du ska skapa timrapporter baserat på Git-commits och asana tasks.
-Din uppgift är att analysera följande PR:s med sina commits och skapa en välstrukturerad timrapport på svenska som sammanfattar det utförda arbetet.
-Ditt språk ska helst inte vara super-noggrant, och du ska prata i jag-form, som om du själv gjort ändringarna. Använd känslor sparsamt. Skriv liksom inte "en väldigt störande bugg". Sedan försök inte att lägga kommentarer på det du själv skrivit. Exempelvis ska du inte skriva: "Nu går det att ..., vilket är bättre ur ett UX-perspektiv" (kommenterade på UX perspektivet). Försök att inte skriva för mycket. Du kan lämna ute information, du behöver inte skriva om varje grej som tas med i varje commit.
 
-Såhär ska det vara strukturerat
+# Vad som ska göras:
+Du kommer få en hel del pull requests, med commits och "tasks" som är kopplade till sig. Commitmeddelanden, PR titeln och task meddelanden beskriver vad som har gjorts / åstadkommits. Du ska gruppera allt som gjort till olika "ändringar". Om en pull request har säg "fixat bugg med chattflödet" och "förbättrat onboarding" i samma, ska dessa splittas upp till två olika "ändringar". Dessutom, om två olika pull requests har ändringar som komplementerar varandra, exempelvis "feature: Skapa 'about us' sida" och "fix: Fel länk i 'about us sida'" så ska du slå ihop dem till en och samma ändring. Det är alltså upp till dig att bestämma vad som är tillräckligt stort för att få sin egna ändring eller inte. 
 
-[Text angående en ändring som gjorts. Du tar data från commit meddelanden, PR titlar och tasks. Du ska sammanfatta vad som gjorts. Helst inte försöka beskriva varje commit, utan snacka om hela ändringen i sin helhet]
-PRs:
-• <endast länkar till en eller flera PR:s i punktlista>
+
+# Varje timrapport ska följa denna struktur:
+<Beskrivning av vad som gjorts i en ändring>
+PR:s:
+* ENDAST raw-text Länk till pr
+* ENDAST raw-text Länk till pr
+...
 Tasks:
-• <endast länkar till en eller flera Tasks i punktlista>
+* ENDAST raw-text Länk till task
+* ENDAST raw-text Länk till task
+...
 
-[Text angående annan ändring]
-PRs:
-• <endast länkar till en eller flera PR:s i punktlista>
-Tasks:
-• <endast länkar till en eller flera Tasks i punktlista>
+<Beskrivning av vad som gjorts i en annan ändring>
+PR:s:
+* ENDAST raw-text Länk till pr
+...
 
-[Text angående annan ändring]
-osv...
+Och så vidare. 
 
+# Skrivstil
+Rapporten ska skrivas på svenska och i jag-form, men var inte rädd för att använda engelska låneord som "jag fixade en bra header till feeds-sidan". Dessutom är det viktigt att inte försöka "verifiera" det du redan sagt. Exempelvis "Jag ändrade A, vilket är bra och gör produkten mer tillgänglig" - säg bara "Jag ändrade A". För varje beskrivning av vad som gjorts i en ändring vill jag att du satsar på att landa runt max 30 ord. Försök undvik att använda ett för proffessionellt språk - främja enkel svenska.
 
-Om du märker att två eller flera PR:s har liknande tema (exempelvis en är "feat: Skapa X", och en annan PR är "fix: Någon bugg med X" så kan du dra ihop dem och ta länkar till båda PR:s i PR listan under beskrivningen av vad som ändrats)
+Här kommer ändringarna:
 
-
-repetera för varje PR som ges.
-Skapa en timrapport baserat på följande data på svenska:

@@ -108,7 +108,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
             ) : (
                 <>
                     <div className="relative">
-                        <div className="space-y-3 max-h-80 overflow-y-auto pr-2 pb-4">
+                        <div className="space-y-3 max-h-80 overflow-y-auto pr-2 pb-4" data-keyboard-scroll-container>
                             {pullRequests.map(pr => (
                                 <DropArea
                                     isActive={selectedPRs.has(pr.id)}
@@ -143,7 +143,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                             <div className="flex-1">
                                                 <div className="flex items-baseline gap-2 mb-1">
                                                     <span className="text-sm text-gray-500 dark:text-zinc-500">#{pr.number}</span>
-                                                    <h4 className="font-medium text-gray-900 dark:text-gray-200">{pr.title}</h4>
+                                                    <h4 className="font-medium text-gray-900 dark:text-gray-200" data-keyboard-searchable>{pr.title}</h4>
                                                     {loadingCommits[pr.number] && (
                                                         <Loader2 className="w-3 h-3 animate-spin text-brand-500" />
                                                     )}
