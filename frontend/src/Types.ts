@@ -19,14 +19,23 @@ export interface PullRequest {
     created_at: string;
     merged_at?: string;
     closed_at?: string;
-
-    // "state" can be "open", "closed", or "merged" etc
     state: string;
     draft: boolean;
     
     auto_merge?: {
         merge_method: string;
-    }
+    };
+    
+    // Lägg till dessa nya fields:
+    merge_commit_sha?: string;
+    head?: {
+        ref: string;
+        sha: string;
+    };
+    base?: {
+        ref: string;
+        sha: string;
+    };
 }
 
 export interface Commit {
@@ -51,3 +60,45 @@ export interface AsanaTask {
     permalink_url: string;
     section?: string;
 }
+
+export interface GitCommit {
+    sha: string;
+    message: string;
+    author: string;
+    date: string;
+    parents: string[];
+    html_url: string;
+}
+
+export interface GitBranch {
+    name: string;
+    commit: {
+        sha: string;
+        url: string;
+    };
+    protected: boolean;
+}
+
+export interface BranchPoint {
+    id: string;
+    x: number;
+    y: number;
+    commit: GitCommit;
+    branchName?: string;
+    isPR?: boolean;
+    prNumber?: number;
+    isMainBranch?: boolean;
+}
+
+export interface BranchLine {
+    from: BranchPoint;
+    to: BranchPoint;
+    type: 'straight' | 'merge' | 'branch';
+}
+
+export interface TimelineGraph {
+    points: BranchPoint[];
+    lines: BranchLine[];
+    timeLabels: { y: number; text: string }[];
+}
+

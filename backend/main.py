@@ -80,7 +80,6 @@ def load_ai_prompt():
     except FileNotFoundError:
         AI_PROMPT = "Du är en hjälpsam assistent som sammanställer timrapporter baserat på Git-commits."
 
-# Lägg till i app startup event
 @app.on_event("startup")
 async def startup_event():
     global async_openai_client
@@ -202,7 +201,20 @@ async def get_pull_requests(owner: str, repo: str, authorization: Optional[str] 
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail="Kunde inte hämta PRs")
         
-        return response.json()
+        prs = response.json()
+        
+        # Berika PRs med ytterligare information
+        enriched_prs = []
+        for pr in prs:
+            enriched_pr = {
+                **pr,
+                "merge_commit_sha": pr.get("merge_commit_sha"),
+                "head": pr.get("head", {}) if pr.get("head") else None,
+                "base": pr.get("base", {}) if pr.get("base") else None
+            }
+            enriched_prs.append(enriched_pr)
+        
+        return enriched_prs
 
 @app.get("/api/repos/{owner}/{repo}/pulls/{pull_number}/commits")
 async def get_pr_commits(owner: str, repo: str, pull_number: int, authorization: Optional[str] = Header(None)):
@@ -546,6 +558,157 @@ async def call_chatgpt(report_text: str) -> str:
         raise Exception(f"ChatGPT API error: {str(e)}")
 
 
+@app.get("/api/repos/{owner}/{repo}/branches")
+async def get_branches(owner: str, repo: str, authorization: Optional[str] = Header(None)):
+    """Hämta alla branches med deras senaste commit"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="GitHub token saknas")
+    
+    headers = {
+        "Authorization": authorization,
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        # Hämta alla branches
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/branches",
+            headers=headers,
+            params={"per_page": 100}
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Kunde inte hämta branches")
+        
+        return response.json()
+
+@app.get("/api/repos/{owner}/{repo}/commits")
+async def get_commits_graph(
+    owner: str, 
+    repo: str, 
+    authorization: Optional[str] = Header(None),
+    since: Optional[str] = None,
+    until: Optional[str] = None
+):
+    """Hämta commits med parent information för att bygga graf"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="GitHub token saknas")
+    
+    headers = {
+        "Authorization": authorization,
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    params = {"per_page": 100}
+    if since:
+        params["since"] = since
+    if until:
+        params["until"] = until
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/commits",
+            headers=headers,
+            params=params
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Kunde inte hämta commits")
+        
+        commits = response.json()
+        
+        # Berika med parent information
+        enriched_commits = []
+        for commit in commits:
+            enriched_commit = {
+                "sha": commit["sha"],
+                "message": commit["commit"]["message"],
+                "author": commit["commit"]["author"]["name"],
+                "date": commit["commit"]["author"]["date"],
+                "parents": [p["sha"] for p in commit["parents"]],
+                "html_url": commit["html_url"]
+            }
+            enriched_commits.append(enriched_commit)
+        
+        return enriched_commits
+
+@app.get("/api/repos/{owner}/{repo}/default-branch")
+async def get_default_branch(owner: str, repo: str, authorization: Optional[str] = Header(None)):
+    """Hämta default branch för repot"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="GitHub token saknas")
+    
+    headers = {
+        "Authorization": authorization,
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}",
+            headers=headers
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Kunde inte hämta repo info")
+        
+        repo_data = response.json()
+        return {"default_branch": repo_data["default_branch"]}
+
+@app.get("/api/repos/{owner}/{repo}/pulls/{pull_number}/commits-detailed")
+async def get_pr_commits_detailed(
+    owner: str, 
+    repo: str, 
+    pull_number: int, 
+    authorization: Optional[str] = Header(None)
+):
+    """Hämta detaljerad commit-historik för en PR inkl branch creation"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="GitHub token saknas")
+    
+    headers = {
+        "Authorization": authorization,
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        # Hämta PR info
+        pr_response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}",
+            headers=headers
+        )
+        
+        if pr_response.status_code != 200:
+            raise HTTPException(status_code=pr_response.status_code, detail="Kunde inte hämta PR info")
+        
+        pr_data = pr_response.json()
+        
+        # Hämta alla commits för PR:en
+        commits_response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/commits",
+            headers=headers,
+            params={"per_page": 250}  # Hämta alla commits
+        )
+        
+        if commits_response.status_code != 200:
+            raise HTTPException(status_code=commits_response.status_code, detail="Kunde inte hämta commits")
+        
+        commits = commits_response.json()
+        
+        # Första commit är branch creation point
+        branch_created_at = commits[0]["commit"]["author"]["date"] if commits else None
+        
+        return {
+            "pull_number": pull_number,
+            "branch_name": pr_data.get("head", {}).get("ref"),
+            "base_branch": pr_data.get("base", {}).get("ref"),
+            "created_at": pr_data["created_at"],
+            "merged_at": pr_data.get("merged_at"),
+            "branch_created_at": branch_created_at,
+            "total_commits": len(commits),
+            "first_commit": commits[0] if commits else None,
+            "last_commit": commits[-1] if commits else None
+        }
 
 @app.get("/api/health")
 async def health_check():

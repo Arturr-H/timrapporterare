@@ -13,6 +13,7 @@ import { DragAndDroppableItem, DropArea, useContextMenu, DragThumbnail } from ".
 import SettingsModal from "./components/SettingsModal";
 import DateFilter from "./components/DateFilter";
 import KeyboardSearch from "./handlers/KeyboardSearch";
+import PRListWithGitVisualization from "./components/PRListWithGitVisualization";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8086";
 
@@ -508,15 +509,17 @@ const TimeReportApp = () => {
                                                 onFilterChange={setDateFilters}
                                             />
                                         </div>
-                                        <PullRequestsList
+                                        {/* ERSÄTT PullRequestsList MED DETTA: */}
+                                        <PRListWithGitVisualization
                                             loading={loading}
                                             pullRequests={prsToShow}
                                             selectedPRs={selectedPRs}
-                                            loadingCommits={loadingCommits}
-                                            prSearchQuery={prSearchQuery}
-                                            setPrSearchQuery={setPrSearchQuery}
                                             assignedTasks={assignedTasks}
+                                            loadingCommits={loadingCommits}
                                             allPRsCount={pullRequests.length}
+                                            prSearchQuery={prSearchQuery}
+                                            selectedRepo={selectedRepo}
+                                            githubToken={githubToken}
                                             onPRSelect={handlePRSelection}
                                             onCopyLink={(url: any) => copyToClipboard(url)}
                                             setAssignedTasks={setAssignedTasks}
@@ -527,6 +530,7 @@ const TimeReportApp = () => {
                                                     return updated;
                                                 });
                                             }}
+                                            setPrSearchQuery={setPrSearchQuery}
                                         />
                                     </>
                                 )}

@@ -112,7 +112,6 @@ const AsanaSidebar: React.FC<AsanaSidebarProps> = ({
 
                     {/* Tasks list */}
                     <div className="flex-1 relative px-3 overflow-hidden mt-4">
-                        {/* ... existing task list code ... */}
                         {/* Lägg till section tag i varje task: */}
                         <div className="space-y-3 overflow-y-auto max-h-full px-3 py-3">
                             {filteredTasks.map((task, index) => (

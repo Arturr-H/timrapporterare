@@ -5,3 +5,86 @@
 html, body {
     background: black;
 }
+
+/* Git branch visualization styles */
+.git-branch-viz {
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(0,0,0,0.02) 50%, 
+        transparent 100%
+    );
+}
+
+.dark .git-branch-viz {
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(255,255,255,0.02) 50%, 
+        transparent 100%
+    );
+}
+
+/* Smooth transitions for hover effects on SVG elements */
+.git-branch-viz circle {
+    transition: r 0.2s ease-in-out, 
+                stroke-width 0.2s ease-in-out,
+                filter 0.2s ease-in-out;
+}
+
+.git-branch-viz circle:hover {
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* Custom scrollbar for PR list when highlighted */
+.pr-list-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pr-list-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pr-list-container::-webkit-scrollbar-thumb {
+    background: rgb(156, 163, 175, 0.3);
+    border-radius: 4px;
+}
+
+.dark .pr-list-container::-webkit-scrollbar-thumb {
+    background: rgb(113, 113, 122, 0.3);
+}
+
+.pr-list-container::-webkit-scrollbar-thumb:hover {
+    background: rgb(156, 163, 175, 0.5);
+}
+
+.dark .pr-list-container::-webkit-scrollbar-thumb:hover {
+    background: rgb(113, 113, 122, 0.5);
+}
+
+/* Sync scrolling for git visualization */
+.git-branch-viz::-webkit-scrollbar {
+    width: 8px;
+}
+
+.git-branch-viz::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.git-branch-viz::-webkit-scrollbar-thumb {
+    background: rgb(139, 92, 246, 0.3);
+    border-radius: 4px;
+}
+
+.dark .git-branch-viz::-webkit-scrollbar-thumb {
+    background: rgb(139, 92, 246, 0.4);
+}
+
+/* Time label styling */
+.git-branch-viz text {
+    user-select: none;
+}
+
+/* Branch point animations */
+.git-branch-viz circle.highlighted {
+    filter: drop-shadow(0 0 12px rgb(251, 191, 36));
+    stroke-width: 3px !important;
+}
