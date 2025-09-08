@@ -132,7 +132,7 @@ const PRListWithGitVisualization: React.FC<PRListWithGitVisualizationProps> = ({
             </div>
 
             {/* Git Visualization - 1/3 width */}
-            <div className="w-80 h-full hidden lg:block">
+            {/* <div className="w-80 h-full hidden lg:block">
                 <GitBranchVisualization
                     commits={commits}
                     pullRequests={pullRequests}
@@ -143,7 +143,7 @@ const PRListWithGitVisualization: React.FC<PRListWithGitVisualizationProps> = ({
                     dateRange={dateRange}
                     onDateRangeChange={setDateRange}
                 />
-            </div>
+            </div> */}
         </div>
     );
 };
