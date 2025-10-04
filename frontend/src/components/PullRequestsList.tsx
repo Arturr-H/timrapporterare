@@ -88,7 +88,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                         <GitPullRequestArrow className="w-5 h-5 text-brand-500" />
                         Pull Requests
                         <p className="text-sm text-gray-500 dark:text-zinc-500">
-                            (visar {allPRsCount} {allPRsCount === 1 ? "PR" : "PRs"})
+                            (visar {pullRequests.length} {pullRequests.length === 1 ? "PR" : "PRs"})
                         </p>
                     </h3>
 
@@ -153,7 +153,7 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                                 <div className="flex-1">
                                                     <div className="flex items-baseline gap-2 mb-1">
                                                         <span className="text-sm text-gray-500 dark:text-zinc-500">#{pr.number}</span>
-                                                        <h4 className="font-medium text-gray-900 dark:text-gray-200" data-keyboard-searchable>{pr.title}</h4>
+                                                        <h4 className="font-medium text-gray-900 dark:text-gray-200 flex-1" data-keyboard-searchable>{pr.title}</h4>
                                                         {loadingCommits[pr.number] && (
                                                             <Loader2 className="w-3 h-3 animate-spin text-brand-500" />
                                                         )}
@@ -178,6 +178,14 @@ const PullRequestsList: React.FC<PullRequestsListProps> = ({
                                                                 {pr.merged_at && <WordTag word={`Merge:ad ${getTimeDescription(pr.merged_at)}`} className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400" />}
                                                             </div>
                                                         </div>
+                                                        {pr.repo_name && (
+                                                            <div className="flex justify-end mt-2">
+                                                                <WordTag 
+                                                                    word={pr.repo_name.split('/').pop() || pr.repo_name} 
+                                                                    className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs" 
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                 </div>

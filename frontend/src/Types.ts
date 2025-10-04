@@ -36,6 +36,10 @@ export interface PullRequest {
         ref: string;
         sha: string;
     };
+    
+    // Repository information for unified PR list
+    repo_name?: string;
+    repo_id?: number;
 }
 
 export interface Commit {

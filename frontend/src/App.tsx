@@ -4,6 +4,7 @@ import axios from "axios";
 import { Repository, PullRequest, AsanaTask, PRCommitsData } from "./Types";
 import TokenModal from "./components/TokenModal";
 import AddRepoModal from "./components/AddRepoModal";
+import RepoManagementModal from "./components/RepoManagementModal";
 import AsanaSidebar from "./components/AsanaSidebar";
 import RepositorySelector from "./components/RepositorySelector";
 import PRCommitsView from "./components/PRCommitsView";
@@ -19,12 +20,16 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8086";
 
 const TimeReportApp = () => {
     // State management
-    const [selectedRepo, setSelectedRepo] = useState<string>("");
+    const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
+    const [repoManagementModalOpen, setRepoManagementModalOpen] = useState<boolean>(false);
+    const [usernameFilter, setUsernameFilter] = useState(() => {
+        return localStorage.getItem('repo_username_filter') || '';
+    });
     const [repos, setRepos] = useState<Repository[]>([]);
     const [favorites, setFavorites] = useState<string[]>([]);
     const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
     const [selectedPRs, setSelectedPRs] = useState<Set<number>>(new Set());
-    const [prCommits, setPrCommits] = useState<Record<number, PRCommitsData>>({});
+    const [prCommits, setPrCommits] = useState<Record<string, PRCommitsData>>({});
     const [currentPRIndex, setCurrentPRIndex] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingCommits, setLoadingCommits] = useState<Record<number, boolean>>({});
@@ -91,12 +96,31 @@ const TimeReportApp = () => {
         }
     }, [githubToken, asanaToken]);
 
-    // Fetch PRs when repo is selected
+    // Select all repos by default when repos are first loaded
     useEffect(() => {
-        if (selectedRepo) {
-            fetchPullRequests();
+        if (repos.length > 0 && selectedRepos.length === 0) {
+            const allRepoIds = repos.map(repo => repo.id);
+            setSelectedRepos(allRepoIds);
         }
-    }, [selectedRepo]);
+    }, [repos, selectedRepos.length]);
+
+    // Fetch PRs when repos are selected
+    useEffect(() => {
+        if (selectedRepos.length > 0) {
+            fetchAllPullRequests();
+        } else {
+            setPullRequests([]);
+            setSelectedPRs(new Set());
+            setPrCommits({});
+        }
+    }, [selectedRepos]);
+
+    // Refetch PRs when username filter changes
+    useEffect(() => {
+        if (selectedRepos.length > 0) {
+            fetchAllPullRequests();
+        }
+    }, [usernameFilter]);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -117,6 +141,12 @@ const TimeReportApp = () => {
                 }
             });
             setRepos(response.data);
+            
+            // Auto-select all repos if none are currently selected
+            if (selectedRepos.length === 0 && response.data.length > 0) {
+                const allRepoIds = response.data.map((repo: any) => repo.id);
+                setSelectedRepos(allRepoIds);
+            }
         } catch (err) {
             console.error("Error fetching repos:", err);
         }
@@ -131,20 +161,50 @@ const TimeReportApp = () => {
         }
     };
 
-    const fetchPullRequests = async () => {
+    const fetchAllPullRequests = async () => {
         setLoading(true);
         try {
-            const [owner, repo] = selectedRepo.split("/");
-            const response = await axios.get(`${API_URL}/api/repos/${owner}/${repo}/pulls`, {
-                headers: {
-                    "Authorization": `Bearer ${githubToken}`
+            const allPRs: (PullRequest & { repo_name: string, repo_id: number })[] = [];
+            
+            // Fetch PRs from all selected repos in parallel
+            const prPromises = selectedRepos.map(async (repoId) => {
+                const repo = repos.find(r => r.id === repoId);
+                if (!repo) return [];
+                
+                const [owner, repoName] = repo.full_name.split("/");
+                try {
+                    const response = await axios.get(`${API_URL}/api/repos/${owner}/${repoName}/pulls`, {
+                        headers: {
+                            "Authorization": `Bearer ${githubToken}`
+                        }
+                    });
+                    return response.data.map((pr: PullRequest) => ({
+                        ...pr,
+                        repo_name: repo.full_name,
+                        repo_id: repo.id
+                    }));
+                } catch (err) {
+                    console.error(`Error fetching PRs for ${repo.full_name}:`, err);
+                    return [];
                 }
             });
-            setPullRequests(response.data);
+            
+            const results = await Promise.all(prPromises);
+            results.forEach(repoPRs => allPRs.push(...repoPRs));
+            
+            // Sort by creation date (newest first)
+            allPRs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            
+            // Apply username filter if set
+            const filteredPRs = usernameFilter.trim()
+                ? allPRs.filter(pr => pr.user.login.toLowerCase().includes(usernameFilter.toLowerCase()))
+                : allPRs;
+            
+            setPullRequests(filteredPRs as any);
             setSelectedPRs(new Set());
             setPrCommits({});
             setCurrentPRIndex(0);
-            setDateFilters([]); // Reset date filters when changing repo
+            setDateFilters([]);
         } catch (err) {
             setError("Kunde inte hämta pull requests.");
             console.error("Error fetching PRs:", err);
@@ -153,10 +213,17 @@ const TimeReportApp = () => {
         }
     };
 
-    const fetchCommitsForPR = async (pr: PullRequest) => {
+    const fetchCommitsForPR = async (pr: PullRequest & { repo_name?: string }) => {
+        const prKey = `${pr.repo_name || 'unknown'}-${pr.number}`;
         setLoadingCommits(prev => ({ ...prev, [pr.number]: true }));
         try {
-            const [owner, repo] = selectedRepo.split("/");
+            const repoFullName = pr.repo_name || selectedRepos.length === 1 ? repos.find(r => selectedRepos.includes(r.id))?.full_name : null;
+            if (!repoFullName) {
+                console.error("Could not determine repo for PR", pr.number);
+                return;
+            }
+            
+            const [owner, repo] = repoFullName.split("/");
             const response = await axios.get(
                 `${API_URL}/api/repos/${owner}/${repo}/pulls/${pr.number}/commits`,
                 {
@@ -168,7 +235,7 @@ const TimeReportApp = () => {
 
             setPrCommits(prev => ({
                 ...prev,
-                [pr.number]: response.data
+                [prKey]: response.data
             }));
 
             const commitShas = response.data.commits.map((commit: any) => commit.sha);
@@ -207,16 +274,18 @@ const TimeReportApp = () => {
         if (newSelected.has(pr.id)) {
             newSelected.delete(pr.id);
             setSelectedPRs(newSelected);
-            setPrCommits(prev => {
-                const updated = { ...prev };
-                delete updated[pr.number];
-                return updated;
-            });
 
             // Remove selected commits for this PR
-            for (const commit of prCommits[pr.number]?.commits || []) {
+            const prKey = `${pr.repo_name || 'unknown'}-${pr.number}`;
+            for (const commit of prCommits[prKey]?.commits || []) {
                 setSelectedCommits(prev => prev.filter(sha => sha !== commit.sha));
             }
+
+            setPrCommits(prev => {
+                const updated = { ...prev };
+                delete updated[prKey];
+                return updated;
+            });
 
             // Remove assigned tasks for this PR
             setAssignedTasks(prev => {
@@ -247,9 +316,10 @@ const TimeReportApp = () => {
             const [owner, repo] = fullName.split("/");
             await axios.delete(`${API_URL}/api/saved-repos/${owner}/${repo}`);
             fetchRepos();
-            if (selectedRepo === fullName) {
-                setSelectedRepo("");
-                setPullRequests([]);
+            // Remove from selected repos if it was selected
+            const removedRepo = repos.find(r => r.full_name === fullName);
+            if (removedRepo && selectedRepos.includes(removedRepo.id)) {
+                setSelectedRepos(prev => prev.filter(id => id !== removedRepo.id));
             }
         } catch (err) {
             console.error("Error removing repo:", err);
@@ -309,13 +379,16 @@ const TimeReportApp = () => {
 
             // Skapa en map av PR data med Asana tasks
             const prDataMap: Record<number, any> = {};
-            selectedPRNumbers.forEach((prNumber: number | undefined) => {
-                if (prNumber && prCommits[prNumber]) {
-                    prDataMap[prNumber] = {
-                        ...prCommits[prNumber],
-                        // Lägg till Asana tasks för denna PR
-                        asana_tasks: assignedTasks[prNumber] || []
-                    };
+            selectedPRs_withRepo.forEach((pr) => {
+                if (pr) {
+                    const prKey = `${pr.repo_name || 'unknown'}-${pr.number}`;
+                    if (prCommits[prKey]) {
+                        prDataMap[pr.number] = {
+                            ...prCommits[prKey],
+                            // Lägg till Asana tasks för denna PR
+                            asana_tasks: assignedTasks[pr.number] || []
+                        };
+                    }
                 }
             });
 
@@ -350,20 +423,14 @@ const TimeReportApp = () => {
         navigator.clipboard.writeText(text);
     };
 
-    const sortedRepos = [...repos].sort((a, b) => {
-        const aFav = favorites.includes(String(a.id));
-        const bFav = favorites.includes(String(b.id));
-        if (aFav && !bFav) return -1;
-        if (!aFav && bFav) return 1;
-        return a.name.localeCompare(b.name);
-    });
 
-    const selectedPRNumbers = Array.from(selectedPRs).map(id =>
-        pullRequests.find(pr => pr.id === id)?.number
-    ).filter(Boolean) as number[];
+    const selectedPRs_withRepo = Array.from(selectedPRs).map(id =>
+        pullRequests.find(pr => pr.id === id)
+    ).filter(Boolean) as PullRequest[];
 
-    const currentPRNumber = selectedPRNumbers[currentPRIndex];
-    const currentCommitData = prCommits[currentPRNumber];
+    const currentPR = selectedPRs_withRepo[currentPRIndex];
+    const currentPRKey = currentPR ? `${currentPR.repo_name || 'unknown'}-${currentPR.number}` : null;
+    const currentCommitData = currentPRKey ? prCommits[currentPRKey] : null;
 
     const { ContextMenuPortal } = useContextMenu();
 
@@ -468,13 +535,40 @@ const TimeReportApp = () => {
                         }}
                     />
 
+                    <RepoManagementModal
+                        isOpen={repoManagementModalOpen}
+                        onClose={() => setRepoManagementModalOpen(false)}
+                        availableRepos={repos}
+                        selectedRepoIds={selectedRepos}
+                        favorites={favorites}
+                        onToggleRepoSelection={(repoId) => {
+                            setSelectedRepos(prev => 
+                                prev.includes(repoId) 
+                                    ? prev.filter(id => id !== repoId)
+                                    : [...prev, repoId]
+                            );
+                        }}
+                        onToggleFavorite={toggleFavorite}
+                        onRemoveRepo={removeRepo}
+                        onAddRepo={() => setAddRepoModalOpen(true)}
+                        onUsernameFilterChange={(filter) => {
+                            setUsernameFilter(filter);
+                            localStorage.setItem('repo_username_filter', filter);
+                        }}
+                    />
+
                     {/* Repository content - visa på desktop eller när repos-tab är aktiv på mobil */}
                     {(!isMobile || activeTab === 'repos') && (
                         <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-8 bg-white dark:bg-black">
                             <div className="max-w-5xl mx-auto">
                                 <div className="mb-6 md:mb-12 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <h2 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white">
-                                        Timrapport{selectedRepo ? ":" : ""} <span className="text-brand-600 dark:text-brand-400 break-all">{selectedRepo}</span>
+                                        Timrapport{selectedRepos.length > 0 ? `:` : ""} 
+                                        {selectedRepos.length > 0 && (
+                                            <span className="text-brand-600 dark:text-brand-400 text-lg md:text-2xl">
+                                                {selectedRepos.length} repo{selectedRepos.length !== 1 ? 's' : ''} selected
+                                            </span>
+                                        )}
                                     </h2>
 
                                     <div className="inline-flex items-center gap-3">
@@ -490,18 +584,51 @@ const TimeReportApp = () => {
                                     </div>
                                 )}
 
-                                <RepositorySelector
-                                    selectedRepo={selectedRepo}
-                                    repos={sortedRepos}
-                                    favorites={favorites}
-                                    onSelectRepo={setSelectedRepo}
-                                    onToggleFavorite={toggleFavorite}
-                                    onRemoveRepo={removeRepo}
-                                    onAddRepo={() => setAddRepoModalOpen(true)}
-                                    onOpenTokenModal={() => setTokenModalOpen(true)}
-                                />
+                                <div className="mb-8">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            Repository Selection
+                                        </h3>
+                                        <button
+                                            onClick={() => setRepoManagementModalOpen(true)}
+                                            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                                        >
+                                            <GitBranch className="w-4 h-4" />
+                                            Manage Repos
+                                        </button>
+                                    </div>
+                                    {selectedRepos.length === 0 ? (
+                                        <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg">
+                                            <GitBranch className="w-12 h-12 text-gray-400 dark:text-zinc-500 mx-auto mb-4" />
+                                            <p className="text-gray-500 dark:text-zinc-400 mb-4">No repositories selected</p>
+                                            <button
+                                                onClick={() => setRepoManagementModalOpen(true)}
+                                                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors"
+                                            >
+                                                Select Repositories
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4">
+                                            <div className="text-sm text-gray-600 dark:text-zinc-400 mb-3">
+                                                Selected repositories ({selectedRepos.length}):
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedRepos.map(repoId => {
+                                                    const repo = repos.find(r => r.id === repoId);
+                                                    return repo ? (
+                                                        <div key={repo.id} className="flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg">
+                                                            <GitBranch className="w-3 h-3 text-brand-600 dark:text-brand-400" />
+                                                            <span className="text-sm text-brand-700 dark:text-brand-300">{repo.name}</span>
+                                                        </div>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                                {selectedRepo && (
+                                {selectedRepos.length > 0 && (
                                     <>
                                         <div className="mb-4">
                                             <DateFilter
@@ -518,7 +645,7 @@ const TimeReportApp = () => {
                                             loadingCommits={loadingCommits}
                                             allPRsCount={pullRequests.length}
                                             prSearchQuery={prSearchQuery}
-                                            selectedRepo={selectedRepo}
+                                            selectedRepos={selectedRepos.map(id => repos.find(r => r.id === id)?.full_name || '').filter(Boolean)}
                                             githubToken={githubToken}
                                             onPRSelect={handlePRSelection}
                                             onCopyLink={(url: any) => copyToClipboard(url)}
@@ -535,13 +662,13 @@ const TimeReportApp = () => {
                                     </>
                                 )}
 
-                                {selectedPRNumbers.length > 0 && currentCommitData && (
+                                {selectedPRs_withRepo.length > 0 && currentCommitData && (
                                     <PRCommitsView
                                         currentPRIndex={currentPRIndex}
-                                        selectedPRNumbers={selectedPRNumbers}
+                                        selectedPRNumbers={selectedPRs_withRepo.map(pr => pr.number)}
                                         currentCommitData={currentCommitData}
                                         onPrev={() => setCurrentPRIndex(Math.max(0, currentPRIndex - 1))}
-                                        onNext={() => setCurrentPRIndex(Math.min(selectedPRNumbers.length - 1, currentPRIndex + 1))}
+                                        onNext={() => setCurrentPRIndex(Math.min(selectedPRs_withRepo.length - 1, currentPRIndex + 1))}
                                         onCopyLink={() => copyToClipboard(currentCommitData.pull_url)}
                                         selectedCommits={selectedCommits}
                                         onCommitSelectionChange={handleCommitSelectionChange}
